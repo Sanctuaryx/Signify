@@ -10,7 +10,7 @@ This information is transmited and transformed, firstly, into words of the alpha
 This is a high abstraction level representation of the architecture implemented:
 
 <p align="center">
-  <img src="https://github.com/Sanctuaryx/TFG/blob/INT/resources/Architecture.jpg?raw=true" hspace="20">
+  <img src="https://github.com/Sanctuaryx/TFG/blob/INT/resources/Architecture.png?raw=true" hspace="20">
 </p>
 
 * ``api`` : contains the PHP files for frontend and backend functionality following Model View Controller pattern.
