@@ -14,7 +14,7 @@ This is a high abstraction level representation of the architecture implemented:
 </p>
 
 * ``test`` : contains the files used to test the correct funtioning of the system.
-* ``api`` :  contains the files for system functionality.
+* ``main`` :  contains the files for system functionality.
 * ``resources`` : contains files and content for the functioning and documentation of the system, as well as various resources such as images or diagrams
 
 ## 👥 Author
