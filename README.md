@@ -13,9 +13,9 @@ This is a high abstraction level representation of the architecture implemented:
   <img src="https://github.com/Sanctuaryx/TFG/blob/INT/resources/Architecture.png?raw=true" hspace="20">
 </p>
 
-* ``api`` : contains the PHP files for frontend and backend functionality following Model View Controller pattern.
-* ``doc`` : contains adittional files and content for web development (images, css, js, ...).
-* ``web`` : documentation built with **Sphinx** that details the structure of the code (classes, methods, functions, ...) in the [main_analysis](https://github.com/bisite/SocialBrandAnalysis/tree/master/src/metrics/main_analysis) folder
+* ``test`` : contains the files used to test the correct funtioning of the system.
+* ``api`` :  contains the files for system functionality.
+* ``resources`` : contains files and content for the functioning and documentation of the system, as well as various resources such as images or diagrams
 
 ## 👥 Author
 <table>
