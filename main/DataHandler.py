@@ -31,14 +31,14 @@ def median(data):
 
 
 data = {
-    'bno055_reading1': [0.1, 0.2, 0.3, ...],
-    'bno055_reading2': [0.4, 0.5, 0.6, ...],
-    'bno055_reading3': [0.4, 0.5, 0.6, ...],
-    'pressure_flexor1': [0.7, 0.8, 0.9, ...],
-    'pressure_flexor2': [0.7, 0.8, 0.9, ...],
-    'pressure_flexor3': [0.7, 0.8, 0.9, ...],
-    'pressure_flexor4': [0.7, 0.8, 0.9, ...],
-    'pressure_flexor5': [0.7, 0.8, 0.9, ...]
+    'bno055_reading1': [0.1, 0.2, 0.3],
+    'bno055_reading2': [0.4, 0.5, 0.6],
+    'bno055_reading3': [0.4, 0.5, 0.6],
+    'pressure_flexor1': [0.7, 0.8, 0.9],
+    'pressure_flexor2': [0.7, 0.8, 0.9],
+    'pressure_flexor3': [0.7, 0.8, 0.9],
+    'pressure_flexor4': [0.7, 0.8, 0.9],
+    'pressure_flexor5': [0.7, 0.8, 0.9]
 }
 
 df = pd.DataFrame(data)
