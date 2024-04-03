@@ -1,4 +1,4 @@
-<h2 align="center">  LSE traduction system </h2>
+<h2 align="center">  LSE translation system </h2>
 
 ##  📲 Introduction
 
