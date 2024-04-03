@@ -1,0 +1,1 @@
+This driver is necessary for the serial library to work with arduino nano

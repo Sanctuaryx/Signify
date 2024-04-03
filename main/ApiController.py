@@ -19,19 +19,6 @@ from pyquaternion import Quaternion
 from serial import tools
 from serial.serialutil import SerialException
 from serial.tools import list_ports
-import adafruit_bno055
-import WordTransformer
-import board
-
-from micropython import const
-from adafruit_bus_device.i2c_device import I2CDevice
-from adafruit_register.i2c_struct import Struct, UnaryStruct
-
-try:
-    from typing import Any, Optional, Tuple, Type, Union
-    from busio import I2C, UART
-except ImportError:
-    pass
 
 #This driver takes an instantiated and active I2C object as an argument to its constructor.
 #i2c = board.I2C()
@@ -43,20 +30,20 @@ def read_serial_data():
         line = ser.readline().decode('utf-8').rstrip()
         return line
 
-def calibrate_bno055(sensor):
-    sensor.mode = Mode.NDOF_MODE
+# def calibrate_bno055(sensor):
+    # sensor.mode = Mode.NDOF_MODE
     
-    Calibration.perform_calibration(sensor, sensor, flexors)
+    # Calibration.perform_calibration(sensor, sensor, flexors)
     
 # Data filtering setup
-def filter_data(raw_data):
+# def filter_data(raw_data):
     # Apply your chosen filter here
-    return filtered_data
+    # return filtered_data
 
 # Gesture recognition setup
-def extract_features(sensor_data):
+# def extract_features(sensor_data):
     # Extract features suitable for machine learning
-    return features
+    # return features
 
 def train_model(features, labels):
     # Train your machine learning model
@@ -64,23 +51,45 @@ def train_model(features, labels):
     model.fit(features, labels)
     return model
 
+def read_serial_data():
+    """
+    Reads data from a serial port and prints it to the console.
 
-# Load or train your machine learning model
-# model = train_model(training_features, training_labels)
-# Main loop
-while True:
+    This function opens a serial port connection, reads data from it, and prints the received data to the console.
+    It continuously reads data until the program is terminated by a keyboard interrupt.
+
+    Raises:
+        serial.SerialException: If there is an error opening the serial port.
+        PermissionError: If permission is denied when accessing the serial port.
+
+    """
+    try:
+        ser = serial.Serial('COM8', 115200, timeout=1)
+        time.sleep(2)  # wait for the connection to initialize
+
+        # Load or train your machine learning model
+        # model = train_model(training_features, training_labels)
+        # Main loop
+        while True:
+            try:
+                data = ser.readline().decode('utf-8').rstrip()
+                if data:
+                    # filtered_data = filter_data(raw_data)
+                    # features = extract_features(filtered_data)
     
-    i2c = board.I2C()
-    sensor = adafruit_bno055.BNO055_I2C(i2c)
+                    # Gesture recognition
+                    #gesture = model.predict([features])[0]  # Predict the gesture
     
-    raw_data = sensor._read_register(adafruit_bno055.BNO055_REGISTER_EULER_H_LSB, 6)
-    filtered_data = filter_data(raw_data)
-    features = extract_features(filtered_data)
-    
-    # Gesture recognition
-    gesture = model.predict([features])[0]  # Predict the gesture
-    
-    # Mapping gesture to word
-    word = gesture_to_word_mapping.get(gesture, "")
-    if word:
-        print(f"The gesture means: {word}")
+                    # Mapping gesture to word
+                    # word = gesture_to_word_mapping.get(gesture, "")
+                    # if word:
+                    #print(f"The gesture means: {word}")
+                    print(data)
+            except KeyboardInterrupt:
+                print("Program terminated")
+                break
+
+    except serial.SerialException as e:
+        print(f"Error opening the serial port: {e}")
+    except PermissionError as e:
+        print(f"Permission denied accessing the serial port: {e}. Try running as Administrator or using sudo.")
