@@ -2,14 +2,18 @@ import serial
 import time
         
 try:
-    ser = serial.Serial('COM8', 115200, timeout=1)
+    serIzq = serial.Serial('COM8', 115200, timeout=1)
+    serDer = serial.Serial('COM7', 115200, timeout=1)
+
     time.sleep(2)  # wait for the connection to initialize
 
     while True:
         try:
-            data = ser.readline().decode('utf-8').rstrip()
-            if data:
-                print(data)
+            dataIzq = serIzq.readline().decode('utf-8').rstrip()
+            dataDer = serDer.readline().decode('utf-8').rstrip()
+            if dataIzq and dataDer:
+                print(dataIzq)
+                print(dataDer)
         except KeyboardInterrupt:
             print("Program terminated")
             break
