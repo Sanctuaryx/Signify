@@ -13,7 +13,6 @@ try:
             dataDer = serDer.readline().decode('utf-8').rstrip()
             if dataIzq and dataDer:
                 print(dataIzq)
-                print(dataDer)
         except KeyboardInterrupt:
             print("Program terminated")
             break
