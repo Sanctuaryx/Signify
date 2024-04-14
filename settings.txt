@@ -11,3 +11,4 @@
 -- keras
 -- pyquaternion
 -- scikit-learn 
+-- pyserial

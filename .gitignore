@@ -9,6 +9,10 @@ __pycache__/
 
 # Distribution / packaging
 .Python
+.vscode
+#ignore vscode
+.vscode/
+resources/
 build/
 develop-eggs/
 dist/
@@ -114,6 +118,8 @@ celerybeat.pid
 
 # Environments
 .env
+.conda
+.conda/
 .venv
 env/
 venv/
