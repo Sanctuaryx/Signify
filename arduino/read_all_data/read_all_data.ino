@@ -26,7 +26,7 @@
 # define BNO055_SAMPLERATE_DELAY_MS (100)
 
 /** The sensor mode will be Nine Degrees of Freedom mode, enabling all sensors and the fusion algorithm **/
-# define BNO055_OPERATION_MODE (Adafruit_BNO055::OPERATION_MODE_NDOF)
+# define BNO055_OPERATION_MODE ()
 
 int P0 = A0;   // select the input pin for the thummb's potentiometer
 int P1 = A1;   // select the input pin for the index's potentiometer
@@ -42,19 +42,20 @@ int V4 = 0;  // variable to store the value coming from the little finger sensor
 
 // I2C device address and line (default I2C address is 0x28 and 0x29)
 Adafruit_BNO055 bno = Adafruit_BNO055(55, 0x28, &Wire);
+int8_t temp;
 
 void setup(void){
+  
   Serial.begin(115200);
 
   while (!Serial) delay(10);  // wait for serial port to open
-
-  Serial.println("Orientation Sensor Test"); Serial.println("");
 
   /* Initialise the sensor */
   int timeout = 850; // can take up to 850 ms to boot up
   while (timeout > 0) {
     if (bno.begin()) {
-      bno.setMode(BNO055_OPERATION_MODE);
+      temp = bno.getTemp();
+      bno.setExtCrystalUse(true);
       break;
     }
     
@@ -80,24 +81,20 @@ void setup(void){
  */
 void loop(void){
 
-  sensors_event_t orientationData , angVelocityData , linearAccelData, magnetometerData, accelerometerData, gravityData;
-  bno.getEvent(&orientationData, Adafruit_BNO055::VECTOR_EULER);
-  bno.getEvent(&angVelocityData, Adafruit_BNO055::VECTOR_GYROSCOPE);
-  bno.getEvent(&linearAccelData, Adafruit_BNO055::VECTOR_LINEARACCEL);
-  bno.getEvent(&magnetometerData, Adafruit_BNO055::VECTOR_MAGNETOMETER);
-  bno.getEvent(&accelerometerData, Adafruit_BNO055::VECTOR_ACCELEROMETER);
-  bno.getEvent(&gravityData, Adafruit_BNO055::VECTOR_GRAVITY);
+  imu::Quaternion quat=bno.getQuat();
 
-  printEvent(&orientationData);
-  printEvent(&angVelocityData);
-  printEvent(&linearAccelData);
-  printEvent(&magnetometerData);
-  printEvent(&accelerometerData);
+  Serial.print("*");
+  Serial.print(quat.w());
+  Serial.print(",");
+  Serial.print(quat.x());
+  Serial.print(",");
+  Serial.print(quat.y());
+  Serial.print(",");
+  Serial.print(quat.z());
+  Serial.print("*");
 
   flexorEvent();
-
   calibrarionEvent();
-
 
   delay(BNO055_SAMPLERATE_DELAY_MS);
 }
@@ -108,20 +105,24 @@ void loop(void){
 * @return void
 */
 void flexorEvent() {
- V0 = analogRead(P0); // Lee el valor de la entrada analógica en el pin A0
-  Serial.println(V0); // Imprime el valor analógico en el monitor serial
+  V0 = analogRead(P0); // Lee el valor de la entrada analógica en el pin A0
+  Serial.print(V0); // Imprime el valor analógico en el monitor serial
+  Serial.print(",");
 
   V1 = analogRead(P1); // Lee el valor de la entrada analógica en el pin A1
-  Serial.println(V1); // Imprime el valor analógico en el monitor serial
-  
+  Serial.print(V1); // Imprime el valor analógico en el monitor serial
+  Serial.print(",");
+
   V2 = analogRead(P2); // Lee el valor de la entrada analógica en el pin A2
-  Serial.println(V2); // Imprime el valor analógico en el monitor serial
-  
+  Serial.print(V2); // Imprime el valor analógico en el monitor serial
+  Serial.print(",");
+
   V3 = analogRead(P3); // Lee el valor de la entrada analógica en el pin A3
-  Serial.println(V3); // Imprime el valor analógico en el monitor serial
+  Serial.print(V3); // Imprime el valor analógico en el monitor serial
+  Serial.print(",");
   
   V4 = analogRead(P4); // Lee el valor de la entrada analógica en el pin A7
-  Serial.println(V4); // Imprime el valor analógico en el monitor serial
+  Serial.print(V4); // Imprime el valor analógico en el monitor serial
 
 }
 
@@ -136,80 +137,15 @@ void calibrarionEvent() {
   uint8_t system, gyro, accel, mag = 0;
   bno.getCalibration(&system, &gyro, &accel, &mag);
 
-  Serial.println("_");
-  Serial.print(system);
+  Serial.print("*");
+  Serial.print(accel);
   Serial.print(",");
   Serial.print(gyro);
   Serial.print(",");
-  Serial.print(accel);
+  Serial.print(mag);
   Serial.print(",");
-  Serial.println(mag);
-  Serial.println("_");
+  Serial.print(system);
 
-}
-
-/*!
-* @brief  Display the sensor data regarding the given event
-* @param  event
-*         The event to be displayed
-*
-* @return void
-*/
-void printEvent(sensors_event_t* event) {
-  double x = -1000000, y = -1000000 , z = -1000000; //dumb values, easy to spot problem
-  if (event->type == SENSOR_TYPE_ACCELEROMETER) {
-    Serial.print("Accl:");
-    x = event->acceleration.x;
-    y = event->acceleration.y;
-    z = event->acceleration.z;
-  }
-  else if (event->type == SENSOR_TYPE_ORIENTATION) {
-    Serial.print("Orient:");
-    x = event->orientation.x;
-    y = event->orientation.y;
-    z = event->orientation.z;
-  }
-  else if (event->type == SENSOR_TYPE_MAGNETIC_FIELD) {
-    Serial.print("Mag:");
-    x = event->magnetic.x;
-    y = event->magnetic.y;
-    z = event->magnetic.z;
-  }
-  else if (event->type == SENSOR_TYPE_GYROSCOPE) {
-    Serial.print("Gyro:");
-    x = event->gyro.x;
-    y = event->gyro.y;
-    z = event->gyro.z;
-  }
-  else if (event->type == SENSOR_TYPE_ROTATION_VECTOR) {
-    Serial.print("Rot:");
-    x = event->gyro.x;
-    y = event->gyro.y;
-    z = event->gyro.z;
-  }
-  else if (event->type == SENSOR_TYPE_LINEAR_ACCELERATION) {
-    Serial.print("Linear:");
-    x = event->acceleration.x;
-    y = event->acceleration.y;
-    z = event->acceleration.z;
-  }
-  else if (event->type == SENSOR_TYPE_GRAVITY) {
-    Serial.print("Gravity:");
-    x = event->acceleration.x;
-    y = event->acceleration.y;
-    z = event->acceleration.z;
-  }
-  else {
-    Serial.print("Unk:");
-  }
-
-  Serial.println("*");
-  Serial.print(x);
-  Serial.print(",");
-  Serial.print(y);
-  Serial.print(",");
-  Serial.println(z);
-  Serial.println("*");
 }
 
 
