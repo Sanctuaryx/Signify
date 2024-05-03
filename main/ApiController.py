@@ -1,14 +1,13 @@
 import Bno055Controller
-import FlexorController
 import Calibration
 import CloudSync
-import DataHandler
-import WordTransformer
 
 import math
 import socket
 import time
 from struct import unpack_from
+import threading
+from queue import Queue
 import numpy as np
 import pandas as pd
 from sklearn import tree as ml
@@ -20,76 +19,80 @@ from serial import tools
 from serial.serialutil import SerialException
 from serial.tools import list_ports
 
-#This driver takes an instantiated and active I2C object as an argument to its constructor.
-#i2c = board.I2C()
-#sensor = adafruit_bno055.BNO055_I2C(i2c)
+# Event object used to send the stop signal to the serial port reading thread
+stop_event = threading.Event()
+# Queue used to store the received serial data
+serial_data_queue = Queue()
+# Thread used to read data from the serial port
+serial_data_thread = threading.Thread(target=Bno055Controller.start_serial_ports, args=(serial_data_queue, stop_event))
 
-# reading of the data from the sensor
-def read_serial_data():
-    if ser.in_waiting > 0:
-        line = ser.readline().decode('utf-8').rstrip()
-        return line
+gestures = {
+    'A': lambda pos, ang, flx: pos[0] > 50 and all(f < 30 for f in flx),
+    'B': lambda pos, ang, flx: pos[1] < 20 and sum(f < 50 for f in flx) > len(flx) / 2,
+    'C': lambda pos, ang, flx: ang[2] > 45 and any(f > 40 for f in flx),
+    # Define similar conditions for other letters...
+}
 
-# def calibrate_bno055(sensor):
-    # sensor.mode = Mode.NDOF_MODE
-    
-    # Calibration.perform_calibration(sensor, sensor, flexors)
-    
-# Data filtering setup
-# def filter_data(raw_data):
-    # Apply your chosen filter here
-    # return filtered_data
+def check_gestures(position, angle, flexors):
+    """
+    Checks the given position, angle, and flexor data against predefined gestures.
 
-# Gesture recognition setup
-# def extract_features(sensor_data):
-    # Extract features suitable for machine learning
-    # return features
+    Args:
+        position (list): The position data.
+        angle (list): The angle data.
+        flexors (list): The flexor data.
 
-def train_model(features, labels):
-    # Train your machine learning model
-    model = ml.DecisionTreeClassifier()  # Example model
-    model.fit(features, labels)
-    return model
+    Returns:
+        str or None: The recognized gesture letter if a gesture is matched, None otherwise.
+
+    """
+    return next((letter for letter, cond in gestures.items() if cond(position, angle, flexors)), None)
+
 
 def read_serial_data():
     """
-    Reads data from a serial port and prints it to the console.
+    Reads serial data from a queue and processes it.
 
-    This function opens a serial port connection, reads data from it, and prints the received data to the console.
-    It continuously reads data until the program is terminated by a keyboard interrupt.
-
-    Raises:
-        serial.SerialException: If there is an error opening the serial port.
-        PermissionError: If permission is denied when accessing the serial port.
+    This function starts a thread to read data from a serial port and continuously
+    processes the data until the program is interrupted by a keyboard interrupt.
 
     """
+    serial_data_thread.start()
+
     try:
-        ser = serial.Serial('COM8', 115200, timeout=1)
-        time.sleep(2)  # wait for the connection to initialize
-
-        # Load or train your machine learning model
-        # model = train_model(training_features, training_labels)
-        # Main loop
         while True:
-            try:
-                data = ser.readline().decode('utf-8').rstrip()
-                if data:
-                    # filtered_data = filter_data(raw_data)
-                    # features = extract_features(filtered_data)
-    
-                    # Gesture recognition
-                    #gesture = model.predict([features])[0]  # Predict the gesture
-    
-                    # Mapping gesture to word
-                    # word = gesture_to_word_mapping.get(gesture, "")
-                    # if word:
-                    #print(f"The gesture means: {word}")
-                    print(data)
-            except KeyboardInterrupt:
-                print("Program terminated")
-                break
+            if not serial_data_queue.empty():
+                dataIzq, dataDer = serial_data_queue.get()
+                pos_izq, angle_Iizq, fex_izq = parse_sensor_data(dataIzq)
+                pos_der, angle_der, fex_der = parse_sensor_data(dataDer)
+            
+    except KeyboardInterrupt:
+        print("Stopping...")
+        stop_event.set()  # Signal the thread to stop
+        serial_data_thread.join()  # Wait for the thread to finish
 
-    except serial.SerialException as e:
-        print(f"Error opening the serial port: {e}")
-    except PermissionError as e:
-        print(f"Permission denied accessing the serial port: {e}. Try running as Administrator or using sudo.")
+def parse_sensor_data(data):
+    """
+    Parses the sensor data received from the serial port.
+    
+    Args:
+        data (str): The raw sensor data received from the serial port.
+        
+    Returns:
+        tuple: A tuple containing the position, angle, and flexor data as lists.
+        
+    """
+    
+    splitData = [part for part in data.strip('*').split('*') if part]
+    
+    if len(splitData) != 3:
+        print("Error: Unexpected data format")
+        return None
+    
+    # Convert each part to a list of floats
+    position = list(map(float, splitData[0].split(',')))
+    angle = list(map(float, splitData[1].split(',')))
+    flexors = list(map(float, splitData[2].split(',')))
+    
+
+    return position, angle, flexors

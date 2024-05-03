@@ -1,178 +1,151 @@
+/*!
+ *   @file read_all_data.ino
+ *
+ *    2024, Raúl Juan García
+ *    Proyect: "Signify, Sign language identification, translation and transmission system"
+ *    University of Salamanca, Bachelor's Degree in Computer Engineering
+ * 
+ *    This driver uses the Adafruit unified sensor library (Adafruit_Sensor),
+ *    which provides a common 'type' for sensor data and some helper functions.
+ * 
+ *    Connections
+ *    ===========
+ *    Connect SCL to analog 5
+ *    Connect SDA to analog 4
+ *    Connect VDD to 3.3-5V DC
+ *    Connect GROUND to common ground
+ *
+ */
+
 #include <Wire.h>
 #include <Adafruit_Sensor.h>
 #include <Adafruit_BNO055.h>
 #include <utility/imumaths.h>
 
-/* This driver uses the Adafruit unified sensor library (Adafruit_Sensor),
-   which provides a common 'type' for sensor data and some helper functions.
+/** Set the delay between fresh samples **/
+# define BNO055_SAMPLERATE_DELAY_MS (100)
 
-   To use this driver you will also need to download the Adafruit_Sensor
-   library and include it in your libraries folder.
+/** The sensor mode will be Nine Degrees of Freedom mode, enabling all sensors and the fusion algorithm **/
+# define BNO055_OPERATION_MODE ()
 
-   You should also assign a unique ID to this sensor for use with
-   the Adafruit Sensor API so that you can identify this particular
-   sensor in any data logs, etc.  To assign a unique ID, simply
-   provide an appropriate value in the constructor below (12345
-   is used by default in this example).
+int P0 = A0;   // select the input pin for the thummb's potentiometer
+int P1 = A1;   // select the input pin for the index's potentiometer
+int P2 = A2;   // select the input pin for the middle finger's potentiometer
+int P3 = A3;   // select the input pin for the ring finger's potentiometer
+int P4 = A7;   // select the input pin for the little finger's potentiometer
 
-   Connections
-   ===========
-   Connect SCL to analog 5
-   Connect SDA to analog 4
-   Connect VDD to 3.3-5V DC
-   Connect GROUND to common ground
+int V0 = 0;  // variable to store the value coming from the thumb sensor 
+int V1 = 0;  // variable to store the value coming from the index sensor 
+int V2 = 0;  // variable to store the value coming from the middle sensor 
+int V3 = 0;  // variable to store the value coming from the ring finger sensor 
+int V4 = 0;  // variable to store the value coming from the little finger sensor 
 
-   History
-   =======
-   2015/MAR/03  - First release (KTOWN)
-*/
-
-/* Set the delay between fresh samples */
-uint16_t BNO055_SAMPLERATE_DELAY_MS = 100;
-
-int sensorPin0 = A0;   // select the input pin for the potentiometer
-int sensorPin1 = A1;   // select the input pin for the potentiometer
-int sensorPin2 = A2;   // select the input pin for the potentiometer
-int sensorPin3 = A3;   // select the input pin for the potentiometer
-int sensorPin7 = A7;   // select the input pin for the potentiometer
-
-int sensorValue0 = 0;  // variable to store the value coming from the sensor 1
-int sensorValue1 = 0;  // variable to store the value coming from the sensor 2
-int sensorValue2 = 0;  // variable to store the value coming from the sensor 3
-int sensorValue3 = 0;  // variable to store the value coming from the sensor 4
-int sensorValue4 = 0;  // variable to store the value coming from the sensor 5
-
-// Check I2C device address and correct line below (by default address is 0x29 or 0x28)
-//                                   id, address
+// I2C device address and line (default I2C address is 0x28 and 0x29)
 Adafruit_BNO055 bno = Adafruit_BNO055(55, 0x28, &Wire);
+int8_t temp;
 
-void setup(void)
-{
+void setup(void){
+  
   Serial.begin(115200);
 
-  while (!Serial) delay(10);  // wait for serial port to open!
-
-  Serial.println("Orientation Sensor Test"); Serial.println("");
+  while (!Serial) delay(10);  // wait for serial port to open
 
   /* Initialise the sensor */
-  if (!bno.begin())
-  {
-    /* There was a problem detecting the BNO055 ... check your connections */
-    Serial.print("Ooops, no BNO055 detected ... Check your wiring or I2C ADDR!");
-    while (1);
+  int timeout = 850; // can take up to 850 ms to boot up
+  while (timeout > 0) {
+    if (bno.begin()) {
+      temp = bno.getTemp();
+      bno.setExtCrystalUse(true);
+      break;
+    }
+    
+    delay(10);
+    timeout -= 10;
   }
-
-  delay(1000);
+  if (timeout <= 0){
+    Serial.print("No BNO055 detected ... Check your wiring or I2C ADDR!");
+  }
 }
 
-void loop(void)
-{
-  //could add VECTOR_ACCELEROMETER, VECTOR_MAGNETOMETER,VECTOR_GRAVITY...
-  sensors_event_t orientationData , angVelocityData , linearAccelData, magnetometerData, accelerometerData, gravityData;
-  bno.getEvent(&orientationData, Adafruit_BNO055::VECTOR_EULER);
-  bno.getEvent(&angVelocityData, Adafruit_BNO055::VECTOR_GYROSCOPE);
-  bno.getEvent(&linearAccelData, Adafruit_BNO055::VECTOR_LINEARACCEL);
-  bno.getEvent(&magnetometerData, Adafruit_BNO055::VECTOR_MAGNETOMETER);
-  bno.getEvent(&accelerometerData, Adafruit_BNO055::VECTOR_ACCELEROMETER);
-  bno.getEvent(&gravityData, Adafruit_BNO055::VECTOR_GRAVITY);
+/*!
+ *  @brief   Gets a vector reading from the specified source
+ *  @param   vector_type
+ *           possible vector type values
+ *           [VECTOR_ACCELEROMETER
+ *            VECTOR_MAGNETOMETER
+ *            VECTOR_GYROSCOPE
+ *            VECTOR_EULER
+ *            VECTOR_LINEARACCEL
+ *            VECTOR_GRAVITY]
+ *  @return  vector from specified source
+ */
+void loop(void){
 
-  printEvent(&orientationData);
-  printEvent(&angVelocityData);
-  printEvent(&linearAccelData);
-  printEvent(&magnetometerData);
-  printEvent(&accelerometerData);
-  printEvent(&gravityData);
+  imu::Quaternion quat=bno.getQuat();
 
-  int8_t boardTemp = bno.getTemp();
-  Serial.println();
-  Serial.print(F("temperature: "));
-  Serial.println(boardTemp);
+  Serial.print("*");
+  Serial.print(quat.w());
+  Serial.print(",");
+  Serial.print(quat.x());
+  Serial.print(",");
+  Serial.print(quat.y());
+  Serial.print(",");
+  Serial.print(quat.z());
+  Serial.print("*");
 
-  uint8_t system, gyro, accel, mag = 0;
-  bno.getCalibration(&system, &gyro, &accel, &mag);
-  Serial.println();
-  Serial.print("Calibration: Sys=");
-  Serial.print(system);
-  Serial.print(" Gyro=");
-  Serial.print(gyro);
-  Serial.print(" Accel=");
-  Serial.print(accel);
-  Serial.print(" Mag=");
-  Serial.println(mag);
+  flexorEvent();
+  calibrarionEvent();
 
-  sensorValue0 = analogRead(sensorPin0); // Lee el valor de la entrada analógica en el pin A0
-  Serial.println(sensorValue0); // Imprime el valor analógico en el monitor serial
-
-  sensorValue1 = analogRead(sensorPin1); // Lee el valor de la entrada analógica en el pin A1
-  Serial.println(sensorValue1); // Imprime el valor analógico en el monitor serial
-  
-  sensorValue2 = analogRead(sensorPin2); // Lee el valor de la entrada analógica en el pin A2
-  Serial.println(sensorValue2); // Imprime el valor analógico en el monitor serial
-  
-  sensorValue3 = analogRead(sensorPin3); // Lee el valor de la entrada analógica en el pin A3
-  Serial.println(sensorValue3); // Imprime el valor analógico en el monitor serial
-  
-  sensorValue4 = analogRead(sensorPin7); // Lee el valor de la entrada analógica en el pin A6
-  Serial.println(sensorValue4); // Imprime el valor analógico en el monitor serial
-
-  Serial.println("--");
   delay(BNO055_SAMPLERATE_DELAY_MS);
 }
 
-void printEvent(sensors_event_t* event) {
-  double x = -1000000, y = -1000000 , z = -1000000; //dumb values, easy to spot problem
-  if (event->type == SENSOR_TYPE_ACCELEROMETER) {
-    Serial.print("Accl:");
-    x = event->acceleration.x;
-    y = event->acceleration.y;
-    z = event->acceleration.z;
-  }
-  else if (event->type == SENSOR_TYPE_ORIENTATION) {
-    Serial.print("Orient:");
-    x = event->orientation.x;
-    y = event->orientation.y;
-    z = event->orientation.z;
-  }
-  else if (event->type == SENSOR_TYPE_MAGNETIC_FIELD) {
-    Serial.print("Mag:");
-    x = event->magnetic.x;
-    y = event->magnetic.y;
-    z = event->magnetic.z;
-  }
-  else if (event->type == SENSOR_TYPE_GYROSCOPE) {
-    Serial.print("Gyro:");
-    x = event->gyro.x;
-    y = event->gyro.y;
-    z = event->gyro.z;
-  }
-  else if (event->type == SENSOR_TYPE_ROTATION_VECTOR) {
-    Serial.print("Rot:");
-    x = event->gyro.x;
-    y = event->gyro.y;
-    z = event->gyro.z;
-  }
-  else if (event->type == SENSOR_TYPE_LINEAR_ACCELERATION) {
-    Serial.print("Linear:");
-    x = event->acceleration.x;
-    y = event->acceleration.y;
-    z = event->acceleration.z;
-  }
-  else if (event->type == SENSOR_TYPE_GRAVITY) {
-    Serial.print("Gravity:");
-    x = event->acceleration.x;
-    y = event->acceleration.y;
-    z = event->acceleration.z;
-  }
-  else {
-    Serial.print("Unk:");
-  }
+/*!
+* @brief  Display the flexor data
+*
+* @return void
+*/
+void flexorEvent() {
+  V0 = analogRead(P0); // Lee el valor de la entrada analógica en el pin A0
+  Serial.print(V0); // Imprime el valor analógico en el monitor serial
+  Serial.print(",");
 
-  Serial.print("\tx= ");
-  Serial.print(x);
-  Serial.print(" |\ty= ");
-  Serial.print(y);
-  Serial.print(" |\tz= ");
-  Serial.println(z);
+  V1 = analogRead(P1); // Lee el valor de la entrada analógica en el pin A1
+  Serial.print(V1); // Imprime el valor analógico en el monitor serial
+  Serial.print(",");
+
+  V2 = analogRead(P2); // Lee el valor de la entrada analógica en el pin A2
+  Serial.print(V2); // Imprime el valor analógico en el monitor serial
+  Serial.print(",");
+
+  V3 = analogRead(P3); // Lee el valor de la entrada analógica en el pin A3
+  Serial.print(V3); // Imprime el valor analógico en el monitor serial
+  Serial.print(",");
+  
+  V4 = analogRead(P4); // Lee el valor de la entrada analógica en el pin A7
+  Serial.print(V4); // Imprime el valor analógico en el monitor serial
+
+}
+
+
+/*!
+* @brief  Display the sensor calibration status
+*
+* @return void
+*/
+void calibrarionEvent() {
+
+  uint8_t system, gyro, accel, mag = 0;
+  bno.getCalibration(&system, &gyro, &accel, &mag);
+
+  Serial.print("*");
+  Serial.print(accel);
+  Serial.print(",");
+  Serial.print(gyro);
+  Serial.print(",");
+  Serial.print(mag);
+  Serial.print(",");
+  Serial.print(system);
+
 }
 
 
