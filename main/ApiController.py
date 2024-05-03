@@ -63,8 +63,8 @@ def read_serial_data():
         while True:
             if not serial_data_queue.empty():
                 dataIzq, dataDer = serial_data_queue.get()
-                pos_izq, angle_Iizq, fex_izq = parse_sensor_data(dataIzq)
-                pos_der, angle_der, fex_der = parse_sensor_data(dataDer)
+                quat_izq, flexors_izq, Calibration_izq = parse_sensor_data(dataIzq)
+                quat_der, flexors_der, Calibration_der = parse_sensor_data(dataDer)
             
     except KeyboardInterrupt:
         print("Stopping...")
@@ -90,9 +90,9 @@ def parse_sensor_data(data):
         return None
     
     # Convert each part to a list of floats
-    position = list(map(float, splitData[0].split(',')))
-    angle = list(map(float, splitData[1].split(',')))
-    flexors = list(map(float, splitData[2].split(',')))
+    quat = list(map(float, splitData[0].split(',')))
+    flexors = list(map(float, splitData[1].split(',')))
+    Calibration = list(map(float, splitData[2].split(',')))
     
 
-    return position, angle, flexors
+    return quat, flexors, Calibration
