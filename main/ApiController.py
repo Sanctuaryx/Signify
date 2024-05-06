@@ -22,16 +22,16 @@ from serial.serialutil import SerialException
 from serial.tools import list_ports
 
 gestures = {
-    'A': lambda eul, flx: eul[0] > 50 and -10 <= eul[1] <= 10 and -10 <= eul[2] <= 10 and all(f < 30 for f in flx),  # Roll > 50, all fingers flexed
-    'B': lambda eul, flx: eul[1] < 50 and eul[2] < 50 and sum(f < 50 for f in flx) > len(flx) / 2,  # Pitch < 20, majority of fingers lightly flexed
-    'C': lambda eul, flx: eul[2] > 45 and any(f > 40 for f in flx),  # Yaw > 45, any finger significantly flexed
-    'D': lambda eul, flx: eul[0] < -30 and flx[0] < 20 and all(f < 20 for f in flx[1:]),  # Negative roll, thumb less flexed, other fingers flat
-    'E': lambda eul, flx: abs(eul[1]) > 30 and flx[2] < 15,  # Absolute pitch over 30, middle finger very flat
-    'F': lambda eul, flx: abs(eul[2]) < 10 and all(f > 45 for f in flx),  # Low yaw variation, all fingers highly flexed
+    'A': lambda eul_izq, flx_izq, eul_der, flx_der: (eul_izq[0] > 50 and -10 <= eul_izq[1] <= 10 and -10 <= eul_izq[2] <= 10 and all(f < 30 for f in flx_izq) or eul_der[0] > 50 and -10 <= eul_der[1] <= 10 and -10 <= eul_der[2] <= 10 and all(f < 30 for f in flx_der)),  # Roll > 50, all fingers flexed
+    'B': lambda eul_izq, flx_izq, eul_der, flx_der: eul_izq[1] < 50 and eul_izq[2] < 50 and sum(f < 50 for f in flx_izq) > len(flx_izq) / 2,  # Pitch < 20, majority of fingers lightly flexed
+    'C': lambda eul_izq, flx_izq, eul_der, flx_der: eul_izq[2] > 45 and any(f > 40 for f in flx_izq),  # Yaw > 45, any finger significantly flexed
+    'D': lambda eul_izq, flx_izq, eul_der, flx_der: eul_izq[0] < -30 and flx_izq[0] < 20 and all(f < 20 for f in flx_izq[1:]),  # Negative roll, thumb less flexed, other fingers flat
+    'E': lambda eul_izq, flx_izq, eul_der, flx_der: abs(eul_izq[1]) > 30 and flx_izq[2] < 15,  # Absolute pitch over 30, middle finger very flat
+    'F': lambda eul_izq, flx_izq, eul_der, flx_der: abs(eul_izq[2]) < 10 and all(f > 45 for f in flx_izq),  # Low yaw variation, all fingers highly flexed
     
 }
 
-def check_gestures(euler, flexors):
+def check_gestures(eul_izq, flx_izq, eul_der, flx_der):
     """
     Checks the given position, angle, and flexor data against predefined gestures.
 
@@ -44,7 +44,7 @@ def check_gestures(euler, flexors):
         str or None: The recognized gesture letter if a gesture is matched, None otherwise.
 
     """
-    return next((letter for letter, cond in gestures.items() if cond(euler, flexors)), None)
+    return next((letter for letter, cond in gestures.items() if cond(eul_izq, flx_izq, eul_der, flx_der)), None)
 
 
 def read_serial_data():
@@ -67,9 +67,9 @@ def read_serial_data():
     try:
         while True:
             if not serial_data_queue.empty():
-                dataIzq, dataDer = serial_data_queue.get()
-                euler_izq, flexors_izq, calibration_izq = parse_sensor_data(dataIzq)
-                euler_der, flexors_der, calibration_der = parse_sensor_data(dataDer)
+                data_izq, data_der = serial_data_queue.get()
+                euler_izq, flexors_izq, calibration_izq = parse_sensor_data(data_izq)
+                euler_der, flexors_der, calibration_der = parse_sensor_data(data_der)
                 
                 if calibration_der[0] < 2 or calibration_izq[0] < 2 or calibration_der[1] < 2 or calibration_izq[1] < 2 or calibration_der[2] < 2 or calibration_izq[2] < 2 or calibration_der[3] < 2 or calibration_izq[3] < 2:
                     print("Calibrating needed...")
