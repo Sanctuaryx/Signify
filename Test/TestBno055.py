@@ -1,46 +1,45 @@
-import random
-import time
+import unittest
+from unittest.mock import MagicMock
+from queue import Queue
+import threading
+import sys, os
 
-class SimulatedBNO055:
-    def __init__(self):
-        # Initialize with some default values or random values
-        self.temperature = 25  # in degrees Celsius
-        self.acceleration = (0, 0, 0)  # in m/s^2
-        self.magnetic = (0, 0, 0)  # in microteslas
-        self.gyro = (0, 0, 0)  # in rad/sec
-        self.euler = (0, 0, 0)
-        self.quaternion = (0, 0, 0, 1)
-        self.linear_acceleration = (0, 0, 0)  # in m/s^2
-        self.gravity = (0, 0, 0)  # in m/s^2
+# Get the directory where the script lives
+script_dir = os.path.dirname("main/ApiController.py")
+# Add the parent directory to sys.path
+sys.path.append(os.path.join(script_dir, '..'))
 
-    def update_readings(self):
-        # Simulate sensor data updates
-        self.temperature = 25 + random.uniform(-5, 5)
-        self.acceleration = tuple(random.uniform(-1, 1) for _ in range(3))
-        self.magnetic = tuple(random.uniform(-50, 50) for _ in range(3))
-        self.gyro = tuple(random.uniform(-5, 5) for _ in range(3))
-        self.euler = tuple(random.uniform(0, 360) for _ in range(3))
-        self.quaternion = tuple(random.uniform(-1, 1) for _ in range(4))
-        self.linear_acceleration = tuple(random.uniform(-1, 1) for _ in range(3))
-        self.gravity = tuple(random.uniform(-9.8, 9.8) for _ in range(3))
+# Assuming your code is in a module named gesture_recognition
+from main.ApiController import  check_gestures, parse_sensor_data
+class TestGestureRecognition(unittest.TestCase):
+    def setUp(self):
+        print("Test")
 
-    def read_sensor(self):
-        # Simulate a sensor read
-        self.update_readings()
-        return {
-            "temperature": self.temperature,
-            "acceleration": self.acceleration,
-            "magnetic": self.magnetic,
-            "gyro": self.gyro,
-            "euler": self.euler,
-            "quaternion": self.quaternion,
-            "linear_acceleration": self.linear_acceleration,
-            "gravity": self.gravity
-        }
+    def test_gesture_recognition(self):
+        # Example data to test gesture 'B'
+        data_izq = '*1.0,0.0,0.0,0.0*30,25,20,15,10*3,3,3,3*'
+        data_der = '*1.0,0.0,0.0,0.0*30,25,20,15,10*3,3,3,3*'
+        
+        euler_izq, flexors_izq, calibration_izq = parse_sensor_data(data_izq)
+        euler_der, flexors_der, calibration_der = parse_sensor_data(data_der)
+        
+        print("+----------------------+")
+        print("| Parsing sensor data |")
+        print("+----------------------+")
+        print("|     Hand     |           Euler angles            |            Flexor data            |     Calibration data     |")
+        print("+--------------+-----------------------------------+-----------------------------------+--------------------------+")
+        print("|   Left Hand  | ", euler_izq, " | ", flexors_izq, " | ", calibration_izq,"  |")
+        print("|  Right Hand  | ", euler_der, " | ", flexors_der, " | ", calibration_der,"  |")
+        print("+--------------+-----------------------------------+-----------------------------------+-------------------------+")
 
-# Example usage
-sensor = SimulatedBNO055()
-while True:
-    data = sensor.read_sensor()
-    print(data)
-    time.sleep(1)  # Simulate delay
+        print("+-------------------+")
+        print("|   Checking Gestures   |")
+        print("+-------------------+")
+        print("|     Hand     |  Gesture  |")
+        print("+--------------+-----------+")
+        print("|   Left Hand  |", check_gestures(euler_izq, flexors_izq), "   |")
+        print("|  Right Hand  |", check_gestures(euler_der, flexors_der), "   |")
+        print("+--------------+-----------+") 
+
+if __name__ == '__main__':
+    unittest.main()
