@@ -3,6 +3,7 @@ import threading
 import main.Bno055Controller
 import main.Calibration
 import main.CloudSync
+import main.GestureClass
 
 import math
 import socket
@@ -21,97 +22,75 @@ from serial import tools
 from serial.serialutil import SerialException
 from serial.tools import list_ports
 
-gestures = {
-    'A': lambda eul_izq, flx_izq, eul_der, flx_der: (eul_izq[0] > 50 and -10 <= eul_izq[1] <= 10 and -10 <= eul_izq[2] <= 10 and all(f < 30 for f in flx_izq) or eul_der[0] > 50 and -10 <= eul_der[1] <= 10 and -10 <= eul_der[2] <= 10 and all(f < 30 for f in flx_der)),  # Roll > 50, all fingers flexed
-    'B': lambda eul_izq, flx_izq, eul_der, flx_der: eul_izq[1] < 50 and eul_izq[2] < 50 and sum(f < 50 for f in flx_izq) > len(flx_izq) / 2,  # Pitch < 20, majority of fingers lightly flexed
-    'C': lambda eul_izq, flx_izq, eul_der, flx_der: eul_izq[2] > 45 and any(f > 40 for f in flx_izq),  # Yaw > 45, any finger significantly flexed
-    'D': lambda eul_izq, flx_izq, eul_der, flx_der: eul_izq[0] < -30 and flx_izq[0] < 20 and all(f < 20 for f in flx_izq[1:]),  # Negative roll, thumb less flexed, other fingers flat
-    'E': lambda eul_izq, flx_izq, eul_der, flx_der: abs(eul_izq[1]) > 30 and flx_izq[2] < 15,  # Absolute pitch over 30, middle finger very flat
-    'F': lambda eul_izq, flx_izq, eul_der, flx_der: abs(eul_izq[2]) < 10 and all(f > 45 for f in flx_izq),  # Low yaw variation, all fingers highly flexed
+class GestureProcessor:
+    def __init__(self, cooldown_time=2):
+        self.last_gesture = None
+        self.last_gesture_time = 0
+        self.cooldown_time = cooldown_time
+        self.serial_data_queue = Queue(maxsize=100)
+        self.stop_event = threading.Event()
+        self.serial_data_thread = threading.Thread(target=self.read_serial_ports)
+        self.serial_data_thread.start()
+
+    def read_serial_ports(self):
+        """Function to read data from the serial ports."""
+        main.Bno055Controller.start_serial_ports(self.serial_data_queue, self.stop_event)
+
+    def is_calibration_needed(self, calibration_izq, calibration_der):
+        """Check if calibration is needed based on the calibration data."""
+        return any(value < 2 for value in calibration_izq) or any(value < 2 for value in calibration_der)
+
+    def process_gesture(self, gesture):
+        """Process a recognized gesture and ensure it follows the cooldown rules."""
+        current_time = time.time()
+        if gesture and (gesture != self.last_gesture or current_time - self.last_gesture_time > self.cooldown_time):
+            print(f"Recognized gesture: {gesture}")
+            main.CloudSync.send_data(gesture)
+            self.last_gesture = gesture
+            self.last_gesture_time = current_time
     
-}
-
-def check_gestures(eul_izq, flx_izq, eul_der, flx_der):
-    """
-    Checks the given position, angle, and flexor data against predefined gestures.
-
-    Args:
-        position (list): The position data.
-        angle (list): The angle data.
-        flexors (list): The flexor data.
-
-    Returns:
-        str or None: The recognized gesture letter if a gesture is matched, None otherwise.
-
-    """
-    return next((letter for letter, cond in gestures.items() if cond(eul_izq, flx_izq, eul_der, flx_der)), None)
-
-
-def read_serial_data():
-    """
-    Reads serial data from a queue and processes it.
-
-    This function starts a thread to read data from a serial port and continuously
-    processes the data until the program is interrupted by a keyboard interrupt.
-
-    """
-    
-    # Event object used to send the stop signal to the serial port reading thread
-    stop_event = threading.Event()
-    # Queue used to store the received serial data
-    serial_data_queue = Queue(maxsize=100)
-    # Thread used to read data from the serial port
-    serial_data_thread = threading.Thread(target=main.Bno055Controller.start_serial_ports, args=(serial_data_queue, stop_event))
-    serial_data_thread.start()
-
-    try:
-        while True:
-            if not serial_data_queue.empty():
-                data_izq, data_der = serial_data_queue.get()
-                euler_izq, flexors_izq, calibration_izq = parse_sensor_data(data_izq)
-                euler_der, flexors_der, calibration_der = parse_sensor_data(data_der)
-                
-                if calibration_der[0] < 2 or calibration_izq[0] < 2 or calibration_der[1] < 2 or calibration_izq[1] < 2 or calibration_der[2] < 2 or calibration_izq[2] < 2 or calibration_der[3] < 2 or calibration_izq[3] < 2:
-                    print("Calibrating needed...")
-                    main.Calibration.calibrate(euler_izq, euler_der)
-                    serial_data_queue.queue.clear()
-                else:
-                    
-                    gesture = check_gestures(euler_izq, euler_der, flexors_izq, flexors_der)
-                    if gesture:
-                        print(f"Recognized gesture: {gesture}")
-                        main.CloudSync.send_data(gesture)
-                
-            
-    except KeyboardInterrupt:
-        print("Stopping...")
-        stop_event.set()  # Signal the thread to stop
-        serial_data_thread.join()  # Wait for the thread to finish
-
-def parse_sensor_data(data):
-    """
-    Parses the sensor data received from the serial port.
-    
-    Args:
-        data (str): The raw sensor data received from the serial port.
+    def parse_sensor_data(self, data):
+        """Parses the sensor data received from the serial port."""
         
-    Returns:
-        tuple: A tuple containing the position, angle, and flexor data as lists.
+        split_data = [part for part in data.strip('*').split('*') if part]
         
-    """
-    
-    splitData = [part for part in data.strip('*').split('*') if part]
-    
-    if len(splitData) != 3:
-        print("Error: Unexpected data format")
-        return None
-    
-    quat = list(map(float, splitData[0].split(',')))
-    flexors = list(map(float, splitData[1].split(',')))
-    Calibration = list(map(float, splitData[2].split(',')))
-    
-    roll=math.atan2(2*(quat[0]*quat[1]+quat[2]*quat[3]),1-2*(quat[1]*quat[1]+quat[2]*quat[2]))
-    pitch=math.asin(2*(quat[0]*quat[2]-quat[3]*quat[1]))
-    yaw=math.atan2(2*(quat[0]*quat[3]+quat[1]*quat[2]),1-2*(quat[2]*quat[2]+quat[3]*quat[3]))-np.pi/2
+        if len(split_data) != 3:
+            print("Error: Unexpected data format")
+            return None
+        
+        quat = list(map(float, split_data[0].split(',')))
+        flexors = list(map(float, split_data[1].split(',')))
+        calibration = list(map(float, split_data[2].split(',')))
+        
+        roll=math.atan2(2*(quat[0]*quat[1]+quat[2]*quat[3]),1-2*(quat[1]*quat[1]+quat[2]*quat[2]))
+        pitch=math.asin(2*(quat[0]*quat[2]-quat[3]*quat[1]))
+        yaw=math.atan2(2*(quat[0]*quat[3]+quat[1]*quat[2]),1-2*(quat[2]*quat[2]+quat[3]*quat[3]))-np.pi/2
 
-    return [roll, pitch, yaw], flexors, Calibration
+        return [roll, pitch, yaw], flexors, calibration
+
+    def run(self):
+        """Main loop to read and process serial data."""
+        try:
+            while True:
+                if not self.serial_data_queue.empty():
+                    data_izq, data_der = self.serial_data_queue.get()
+                    euler_izq, flexors_izq, calibration_izq = self.parse_sensor_data(data_izq)
+                    euler_der, flexors_der, calibration_der = self.parse_sensor_data(data_der)
+
+                    if self.is_calibration_needed(calibration_izq, calibration_der):
+                        print("Calibrating needed...")
+                        main.Calibration.BNO055Calibrator(self.serial_data_queue)
+                        self.serial_data_queue.queue.clear()
+                    else:
+                        gesture = main.GestureClass.recognize_letter(euler_izq, euler_der, flexors_izq, flexors_der)
+                        if gesture:
+                            self.process_gesture(gesture)
+
+        except KeyboardInterrupt:
+            print("Stopping...")
+            self.stop_event.set()  # Signal the thread to stop
+            self.serial_data_thread.join()  # Wait for the thread to finish
+
+
+processor = GestureProcessor(cooldown_time=2)
+processor.run()
