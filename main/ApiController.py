@@ -1,4 +1,25 @@
 import threading
+import sys, os
+
+# Get the directory where the script lives
+script_dir = os.path.dirname("main/Bno055Controller.py")
+# Add the parent directory to sys.path
+sys.path.append(os.path.join(script_dir, '..'))
+
+# Get the directory where the script lives
+script_dir = os.path.dirname("main/Calibration.py")
+# Add the parent directory to sys.path
+sys.path.append(os.path.join(script_dir, '..'))
+
+# Get the directory where the script lives
+script_dir = os.path.dirname("main/CloudSync.py")
+# Add the parent directory to sys.path
+sys.path.append(os.path.join(script_dir, '..'))
+
+# Get the directory where the script lives
+script_dir = os.path.dirname("main/GestureClass.py")
+# Add the parent directory to sys.path
+sys.path.append(os.path.join(script_dir, '..'))
 
 import main.Bno055Controller
 import main.Calibration
@@ -71,7 +92,7 @@ class GestureProcessor:
     def run(self):
         """Main loop to read and process serial data."""
         try:
-            while True:
+            while not self.stop_event.is_set():
                 if not self.serial_data_queue.empty():
                     data_izq, data_der = self.serial_data_queue.get()
                     euler_izq, flexors_izq, calibration_izq = self.parse_sensor_data(data_izq)
