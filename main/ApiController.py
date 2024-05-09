@@ -12,7 +12,7 @@ script_dir = os.path.dirname("main/Calibration.py")
 sys.path.append(os.path.join(script_dir, '..'))
 
 # Get the directory where the script lives
-script_dir = os.path.dirname("main/CloudSync.py")
+script_dir = os.path.dirname("main/TextToSpeechConverter.py")
 # Add the parent directory to sys.path
 sys.path.append(os.path.join(script_dir, '..'))
 
@@ -23,7 +23,7 @@ sys.path.append(os.path.join(script_dir, '..'))
 
 import main.Bno055Controller
 import main.Calibration
-import main.CloudSync
+import main.TextToSpeechConverter
 import main.GestureClass
 
 import math
@@ -50,13 +50,22 @@ class GestureProcessor:
         self.cooldown_time = cooldown_time
         self.serial_data_queue = Queue(maxsize=100)
         self.stop_event = threading.Event()
+        
+        self.calibration = main.Calibration.BNO055Calibrator(self.serial_data_queue)
+        self.tts = main.TextToSpeechConverter.TTSConverter("tts_models/es/css10/vits")
+        self.bno_controller = main.Bno055Controller.SerialPortReader('COM7', 'COM8')
+        
         self.serial_data_thread = threading.Thread(target=self.read_serial_ports)
         self.serial_data_thread.start()
 
     def read_serial_ports(self):
         """Function to read data from the serial ports."""
-        main.Bno055Controller.start_serial_ports(self.serial_data_queue, self.stop_event)
-
+        try:
+            self.bno_controller.start(self.serial_data_queue, self.stop_event)
+        except AttributeError as e:
+            print(f"Error starting the bno controller: {e}")
+            self.stop_event.set()
+            
     def is_calibration_needed(self, calibration_izq, calibration_der):
         """Check if calibration is needed based on the calibration data."""
         return any(value < 2 for value in calibration_izq) or any(value < 2 for value in calibration_der)
@@ -66,7 +75,7 @@ class GestureProcessor:
         current_time = time.time()
         if gesture and (gesture != self.last_gesture or current_time - self.last_gesture_time > self.cooldown_time):
             print(f"Recognized gesture: {gesture}")
-            main.CloudSync.send_data(gesture)
+            self.tts.convert_text_to_audio(gesture)
             self.last_gesture = gesture
             self.last_gesture_time = current_time
     
@@ -100,7 +109,7 @@ class GestureProcessor:
 
                     if self.is_calibration_needed(calibration_izq, calibration_der):
                         print("Calibrating needed...")
-                        main.Calibration.BNO055Calibrator(self.serial_data_queue)
+                        self.calibration.calibrate()
                         self.serial_data_queue.queue.clear()
                     else:
                         gesture = main.GestureClass.recognize_letter(euler_izq, euler_der, flexors_izq, flexors_der)
@@ -112,6 +121,7 @@ class GestureProcessor:
             self.stop_event.set()  # Signal the thread to stop
             self.serial_data_thread.join()  # Wait for the thread to finish
 
+if __name__ == "__main__":
 
-processor = GestureProcessor(cooldown_time=2)
-processor.run()
+    processor = GestureProcessor()
+    processor.run()
