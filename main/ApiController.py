@@ -21,27 +21,23 @@ script_dir = os.path.dirname("main/GestureClass.py")
 # Add the parent directory to sys.path
 sys.path.append(os.path.join(script_dir, '..'))
 
+# Get the directory where the script lives
+script_dir = os.path.dirname("main/FileController.py")
+# Add the parent directory to sys.path
+sys.path.append(os.path.join(script_dir, '..'))
+
 import main.Bno055Controller
 import main.Calibration
 import main.TextToSpeechConverter
 import main.GestureClass
+import main.FileController
 
 import math
-import socket
 import time
 from struct import unpack_from
 import threading
 from queue import Queue
 import numpy as np
-import pandas as pd
-from sklearn import tree as ml
-import serial
-
-import serial as ser
-from pyquaternion import Quaternion
-from serial import tools
-from serial.serialutil import SerialException
-from serial.tools import list_ports
 
 class GestureProcessor:
     def __init__(self, cooldown_time=2):
@@ -51,8 +47,9 @@ class GestureProcessor:
         self.serial_data_queue = Queue(maxsize=100)
         self.stop_event = threading.Event()
         
-        self.calibration = main.Calibration.BNO055Calibrator(self.serial_data_queue)
         self.tts = main.TextToSpeechConverter.TTSConverter("tts_models/es/css10/vits")
+        self.calibration = main.Calibration.BNO055Calibrator(self.serial_data_queue)
+        self.file_controller = main.FileController.SpeechFileManager()
         self.bno_controller = main.Bno055Controller.SerialPortReader('COM7', 'COM8')
         
         self.serial_data_thread = threading.Thread(target=self.read_serial_ports)
@@ -78,6 +75,9 @@ class GestureProcessor:
             self.tts.convert_text_to_audio(gesture)
             self.last_gesture = gesture
             self.last_gesture_time = current_time
+            
+            self.file_controller.play_speech_file()
+
     
     def parse_sensor_data(self, data):
         """Parses the sensor data received from the serial port."""

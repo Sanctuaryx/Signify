@@ -1,3 +1,5 @@
+# /main/Calibration.py
+
 import time
 
 class BNO055Calibrator:
@@ -10,6 +12,8 @@ class BNO055Calibrator:
         :param serial_data_queue: A queue object that provides sensor data.
         """
         self.serial_data_queue = serial_data_queue
+        print('Calibrator initialized successfully.')
+
 
     def _get_calibration_data(self, data_source):
         """
