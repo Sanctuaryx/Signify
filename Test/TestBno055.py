@@ -3,6 +3,7 @@ from unittest.mock import MagicMock
 from queue import Queue
 import threading
 import sys, os
+import pyttsx3
 
 # Get the directory where the script lives
 script_dir = os.path.dirname("main/ApiController.py")
@@ -28,13 +29,12 @@ from main.ApiController import ApiController
 from main.GestureClass import recognize_letter
 from main.TextToSpeechConverter import TTSConverter
 from main.FileController import SpeechFileManager
-class TestGestureRecognition(unittest.TestCase):
-    def setUp(self):
-        print("Test")
+class TestGestureRecognition:
 
     def test_gesture_recognition(self):
         api_controller = ApiController()
-        tts = TTSConverter("tts_models/es/css10/vits")
+        #tts = TTSConverter("tts_models/multilingual/multi-dataset/xtts_v2")
+        #tts = TTSConverter("tts_models/es/css10/vits")
         speech = SpeechFileManager()
         
         # Example data to test gesture 'B'
@@ -64,8 +64,24 @@ class TestGestureRecognition(unittest.TestCase):
         print("|    Letter    |    ", gesture, " |")
         print("+--------------+-----------+") 
         
-        tts.convert_text_to_audio(gesture)
+        #tts.convert_text_to_audio("la palabra es: A", speaker_wav="resources/audioResources/samples_es_sample.wav", language="es")
+        #tts.convert_text_to_audio(text="la letra es Be")
+        self.engine = pyttsx3.init()
+        self.engine.setProperty('rate', 150)  # Speed of speech
+        self.engine.setProperty('volume', 1)  # Volume (0.0 to 1.0)
+        
+        # Check and set the available voices
+        voices = self.engine.getProperty('voices')
+        for voice in voices:
+            if 'spanish' in voice.languages:
+                self.engine.setProperty('voice', voice.id)
+                
+            
+        self.engine.save_to_file("A", "resources/audioResources/audioTracks/audio.wav")
+        self.engine.runAndWait()
+        
         speech.play_speech_file()
 
 if __name__ == '__main__':
-    unittest.main()
+    test = TestGestureRecognition()
+    test.test_gesture_recognition()

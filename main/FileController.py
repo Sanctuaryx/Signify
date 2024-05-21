@@ -51,5 +51,4 @@ class SpeechFileManager:
         Play a `.wav` audio file in a separate thread.
         """
         # Start a new thread for audio playback
-        self.playback_thread = threading.Thread(target=self._play_audio)
-        self.playback_thread.start()
+        self._play_audio()
