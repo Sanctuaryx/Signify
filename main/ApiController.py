@@ -34,12 +34,11 @@ import main.FileController
 
 import math
 import time
-from struct import unpack_from
 import threading
 from queue import Queue
 import numpy as np
 
-class GestureProcessor:
+class ApiController:
     def __init__(self, cooldown_time=2):
         self.last_gesture = None
         self.last_gesture_time = 0
@@ -50,10 +49,6 @@ class GestureProcessor:
         self.tts = main.TextToSpeechConverter.TTSConverter("tts_models/es/css10/vits")
         self.calibration = main.Calibration.BNO055Calibrator(self.serial_data_queue)
         self.file_controller = main.FileController.SpeechFileManager()
-        self.bno_controller = main.Bno055Controller.SerialPortReader('COM7', 'COM8')
-        
-        self.serial_data_thread = threading.Thread(target=self.read_serial_ports)
-        self.serial_data_thread.start()
 
     def read_serial_ports(self):
         """Function to read data from the serial ports."""
@@ -101,6 +96,10 @@ class GestureProcessor:
     def run(self):
         """Main loop to read and process serial data."""
         try:
+            self.bno_controller = main.Bno055Controller.SerialPortReader('COM7', 'COM8')
+            self.serial_data_thread = threading.Thread(target=self.read_serial_ports)
+            self.serial_data_thread.start()
+            
             while not self.stop_event.is_set():
                 if not self.serial_data_queue.empty():
                     data_izq, data_der = self.serial_data_queue.get()
@@ -123,5 +122,5 @@ class GestureProcessor:
 
 if __name__ == "__main__":
 
-    processor = GestureProcessor()
+    processor = ApiController()
     processor.run()

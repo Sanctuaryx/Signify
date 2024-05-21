@@ -48,10 +48,9 @@ gesture_a = Gesture(
 
 # Dictionary mapping gestures to lambda functions for checking them
 gesture_checks = {
-    'A': lambda eul_izq, flx_izq, eul_der, flx_der: gesture_a.check_gesture(eul_izq, flx_izq) or gesture_a.check_gesture(eul_der, flx_der),
+    'HOLA': lambda eul_izq, flx_izq, eul_der, flx_der: gesture_a.check_gesture(eul_izq, flx_izq) or gesture_a.check_gesture(eul_der, flx_der),
 }
 
 def recognize_letter(eul_izq, flx_izq, eul_der, flx_der):
-      
     return next((letter for letter, check in gesture_checks.items() if check(eul_izq, flx_izq, eul_der, flx_der)), None)
 
