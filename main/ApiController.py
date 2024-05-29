@@ -49,11 +49,13 @@ class ApiController:
         self.tts = main.TextToSpeechConverter.TTSConverter("tts_models/es/css10/vits")
         self.calibration = main.Calibration.BNO055Calibrator(self.serial_data_queue)
         self.file_controller = main.FileController.SpeechFileManager()
-
+        
     def read_serial_ports(self):
         """Function to read data from the serial ports."""
         try:
-            self.bno_controller.start(self.serial_data_queue, self.stop_event)
+            self.bno_controller = main.Bno055Controller.SerialPortReader('COM4', 'COM3', self.serial_data_queue, self.stop_event)
+            self.serial_data_thread = threading.Thread(target=self.bno_controller.start, daemon=True)
+            self.serial_data_thread.start() 
         except AttributeError as e:
             print(f"Error starting the bno controller: {e}")
             self.stop_event.set()
@@ -70,10 +72,8 @@ class ApiController:
             self.tts.convert_text_to_audio(gesture)
             self.last_gesture = gesture
             self.last_gesture_time = current_time
-            
             self.file_controller.play_speech_file()
 
-    
     def parse_sensor_data(self, data):
         """Parses the sensor data received from the serial port."""
         
@@ -95,32 +95,37 @@ class ApiController:
 
     def run(self):
         """Main loop to read and process serial data."""
-        try:
-            self.bno_controller = main.Bno055Controller.SerialPortReader('COM7', 'COM8')
-            self.serial_data_thread = threading.Thread(target=self.read_serial_ports)
-            self.serial_data_thread.start()
-            
+        try:  
+            self.read_serial_ports()
             while not self.stop_event.is_set():
-                if not self.serial_data_queue.empty():
-                    data_izq, data_der = self.serial_data_queue.get()
-                    euler_izq, flexors_izq, calibration_izq = self.parse_sensor_data(data_izq)
-                    euler_der, flexors_der, calibration_der = self.parse_sensor_data(data_der)
+                try:
+                    if not self.serial_data_queue.empty():
+                        print("Processing data...: "+str(self.serial_data_queue.qsize()))
+                        data_izq, data_der = self.serial_data_queue.get()
+                        self.serial_data_queue.task_done()
+                        euler_izq, flexors_izq, calibration_izq = self.parse_sensor_data(data_izq)
+                        euler_der, flexors_der, calibration_der = self.parse_sensor_data(data_der)
 
-                    if self.is_calibration_needed(calibration_izq, calibration_der):
-                        print("Calibrating needed...")
-                        self.calibration.calibrate()
-                        self.serial_data_queue.queue.clear()
-                    else:
-                        gesture = main.GestureClass.recognize_letter(euler_izq, euler_der, flexors_izq, flexors_der)
-                        if gesture:
-                            self.process_gesture(gesture)
-
+                        if self.is_calibration_needed(calibration_izq, calibration_der):
+                            print("Calibrating needed...")
+                            self.calibration.calibrate()
+                            self.serial_data_queue.queue.clear()
+                        else:
+                            gesture = main.GestureClass.recognize_letter(euler_izq, euler_der, flexors_izq, flexors_der)
+                            if gesture:
+                                self.process_gesture(gesture)
+                except Exception as e:
+                    print(f"Error processing data: {e}")
+                    
         except KeyboardInterrupt:
             print("Stopping...")
             self.stop_event.set()  # Signal the thread to stop
+
+        finally:
             self.serial_data_thread.join()  # Wait for the thread to finish
-
+            print("Program terminated.")
+            
 if __name__ == "__main__":
-
+    
     processor = ApiController()
     processor.run()

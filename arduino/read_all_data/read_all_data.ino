@@ -83,7 +83,6 @@ void loop(void){
 
   imu::Quaternion quat=bno.getQuat();
 
-  Serial.print("*");
   Serial.print(quat.w());
   Serial.print(",");
   Serial.print(quat.x());
@@ -96,6 +95,7 @@ void loop(void){
   flexorEvent();
   calibrarionEvent();
 
+  Serial.println();
   delay(BNO055_SAMPLERATE_DELAY_MS);
 }
 

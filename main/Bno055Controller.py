@@ -6,7 +6,7 @@ from queue import Queue
 from threading import Event
 
 class SerialPortReader:
-    def __init__(self, port_left: str, port_right: str, baud_rate: int = 115200, timeout: float = 1.0):
+    def __init__(self, port_left: str, port_right: str, data_queue: Queue, stop_event: Event, baud_rate: int = 115200, timeout: float = 1.0):
         """
         Initializes the SerialPortReader class with two serial ports.
 
@@ -20,6 +20,8 @@ class SerialPortReader:
         self.port_right = port_right
         self.baud_rate = baud_rate
         self.timeout = timeout
+        self.data_queue = data_queue
+        self.stop_event = stop_event
 
         # Initialize serial port objects
         self.ser_left = None
@@ -28,7 +30,7 @@ class SerialPortReader:
         print('BNO055 controller initialized successfully.')
 
 
-    def start(self, data_queue: Queue, stop_event: Event):
+    def start(self):
         """
         Starts reading from the configured serial ports and puts the data into a queue.
 
@@ -41,24 +43,27 @@ class SerialPortReader:
             self.ser_left = serial.Serial(self.port_left, self.baud_rate, timeout=self.timeout)
             self.ser_right = serial.Serial(self.port_right, self.baud_rate, timeout=self.timeout)
 
+            print(f"Serial ports {self.port_left} and {self.port_right} opened successfully.")
             # Allow some time for ports to initialize
             time.sleep(2)
 
-            while not stop_event.is_set():
+            while not self.stop_event.is_set():
                 # Read and decode data from both ports
                 data_left = self.ser_left.readline().decode('utf-8').rstrip()
                 data_right = self.ser_right.readline().decode('utf-8').rstrip()
 
                 # If data is available, put it in the queue
                 if data_left and data_right:
-                    data_queue.put((data_left, data_right))
-
+                    self.data_queue.put((data_left, data_right))
+            
+            self._close_ports()
+            
         except serial.SerialException as e:
             print(f"Error opening the serial port: {e}")
-            stop_event.set()
+            self.stop_event.set()
         except PermissionError as e:
             print(f"Permission denied accessing the serial port: {e}. Try running as Administrator or using sudo.")
-            stop_event.set()
+            self.stop_event.set()
         finally:
             self._close_ports()
 
@@ -69,7 +74,3 @@ class SerialPortReader:
         if self.ser_right and self.ser_right.is_open:
             self.ser_right.close()
 
-
-
-    
-    
