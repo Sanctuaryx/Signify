@@ -39,26 +39,26 @@ from queue import Queue
 import numpy as np
 
 class ApiController:
-    def __init__(self, cooldown_time=2):
-        self.last_gesture = None
-        self.last_gesture_time = 0
-        self.cooldown_time = cooldown_time
-        self.serial_data_queue = Queue(maxsize=100)
-        self.stop_event = threading.Event()
+    def __init__(self):
+        self._last_gesture = None
+        self._last_gesture_time = 0
+        self._cooldown_time = 2
+        self._serial_data_queue = Queue(maxsize=100)
+        self._stop_event = threading.Event()
         
-        self.tts = main.TextToSpeechConverter.TTSConverter("tts_models/es/css10/vits")
-        self.calibration = main.Calibration.BNO055Calibrator(self.serial_data_queue)
-        self.file_controller = main.FileController.SpeechFileManager()
+        self._tts = main.TextToSpeechConverter.TTSConverter("tts_models/es/css10/vits")
+        self._calibration = main.Calibration.BNO055Calibrator(self._serial_data_queue)
+        self._file_controller = main.FileController.SpeechFileManager()
         
     def read_serial_ports(self):
         """Function to read data from the serial ports."""
         try:
-            self.bno_controller = main.Bno055Controller.SerialPortReader('COM4', 'COM3', self.serial_data_queue, self.stop_event)
+            self.bno_controller = main.Bno055Controller.SerialPortReader('COM4', 'COM3', self._serial_data_queue, self._stop_event)
             self.serial_data_thread = threading.Thread(target=self.bno_controller.start, daemon=True)
             self.serial_data_thread.start() 
         except AttributeError as e:
             print(f"Error starting the bno controller: {e}")
-            self.stop_event.set()
+            self._stop_event.set()
             
     def is_calibration_needed(self, calibration_izq, calibration_der):
         """Check if calibration is needed based on the calibration data."""
@@ -67,12 +67,12 @@ class ApiController:
     def process_gesture(self, gesture):
         """Process a recognized gesture and ensure it follows the cooldown rules."""
         current_time = time.time()
-        if gesture and (gesture != self.last_gesture or current_time - self.last_gesture_time > self.cooldown_time):
+        if gesture and (gesture != self._last_gesture or current_time - self._last_gesture_time > self._cooldown_time):
             print(f"Recognized gesture: {gesture}")
-            self.tts.convert_text_to_audio(gesture)
-            self.last_gesture = gesture
-            self.last_gesture_time = current_time
-            self.file_controller.play_speech_file()
+            self._tts.convert_text_to_audio(gesture)
+            self._last_gesture = gesture
+            self._last_gesture_time = current_time
+            self._file_controller.play_speech_file()
 
     def parse_sensor_data(self, data):
         """Parses the sensor data received from the serial port."""
@@ -97,19 +97,20 @@ class ApiController:
         """Main loop to read and process serial data."""
         try:  
             self.read_serial_ports()
-            while not self.stop_event.is_set():
+            while not self._stop_event.is_set():
                 try:
-                    if not self.serial_data_queue.empty():
-                        print("Processing data...: "+str(self.serial_data_queue.qsize()))
-                        data_izq, data_der = self.serial_data_queue.get()
-                        self.serial_data_queue.task_done()
+                    if not self._serial_data_queue.empty():
+                        data_izq, data_der = self._serial_data_queue.get()
+                        self._serial_data_queue.task_done()
+                        print(f"Data received: {data_izq} - {data_der}")
                         euler_izq, flexors_izq, calibration_izq = self.parse_sensor_data(data_izq)
                         euler_der, flexors_der, calibration_der = self.parse_sensor_data(data_der)
-
+                        print(f"Data parsed: {euler_izq} - {euler_der}")
+                        
                         if self.is_calibration_needed(calibration_izq, calibration_der):
                             print("Calibrating needed...")
-                            self.calibration.calibrate()
-                            self.serial_data_queue.queue.clear()
+                            self._calibration.calibrate()
+                            with self._serial_data_queue.mutex: self._serial_data_queue.queue.clear()
                         else:
                             gesture = main.GestureClass.recognize_letter(euler_izq, euler_der, flexors_izq, flexors_der)
                             if gesture:
@@ -119,9 +120,11 @@ class ApiController:
                     
         except KeyboardInterrupt:
             print("Stopping...")
-            self.stop_event.set()  # Signal the thread to stop
+            self._stop_event.set()  # Signal the thread to stop
+            with self._serial_data_queue.mutex: self._serial_data_queue.queue.clear()
 
         finally:
+            self.bno_controller.stop()
             self.serial_data_thread.join()  # Wait for the thread to finish
             print("Program terminated.")
             

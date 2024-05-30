@@ -3,6 +3,7 @@
 import serial
 import time
 from queue import Queue
+import threading
 from threading import Event
 
 class SerialPortReader:
@@ -20,8 +21,8 @@ class SerialPortReader:
         self.port_right = port_right
         self.baud_rate = baud_rate
         self.timeout = timeout
-        self.data_queue = data_queue
-        self.stop_event = stop_event
+        self._data_queue = data_queue
+        self._stop_event = stop_event
 
         # Initialize serial port objects
         self.ser_left = None
@@ -47,23 +48,22 @@ class SerialPortReader:
             # Allow some time for ports to initialize
             time.sleep(2)
 
-            while not self.stop_event.is_set():
+            while not self._stop_event.is_set():
                 # Read and decode data from both ports
                 data_left = self.ser_left.readline().decode('utf-8').rstrip()
                 data_right = self.ser_right.readline().decode('utf-8').rstrip()
 
                 # If data is available, put it in the queue
                 if data_left and data_right:
-                    self.data_queue.put((data_left, data_right))
-            
-            self._close_ports()
+                    self._data_queue.put((data_left, data_right))
+                
             
         except serial.SerialException as e:
             print(f"Error opening the serial port: {e}")
-            self.stop_event.set()
+            self._stop_event.set()
         except PermissionError as e:
             print(f"Permission denied accessing the serial port: {e}. Try running as Administrator or using sudo.")
-            self.stop_event.set()
+            self._stop_event.set()
         finally:
             self._close_ports()
 
@@ -73,4 +73,10 @@ class SerialPortReader:
             self.ser_left.close()
         if self.ser_right and self.ser_right.is_open:
             self.ser_right.close()
+            
+    def stop(self):
+        self._stop_event.set()
+
+    def stopped(self):
+        return self._stop_event.is_set()
 
