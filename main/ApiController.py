@@ -47,15 +47,16 @@ class ApiController:
         self._stop_event = threading.Event()
         
         self._tts = main.TextToSpeechConverter.TTSConverter("tts_models/es/css10/vits")
-        self._calibration = main.Calibration.BNO055Calibrator(self._serial_data_queue)
+        self._calibration = main.Calibration.BNO055Calibrator(self._serial_data_queue, self._stop_event)
         self._file_controller = main.FileController.SpeechFileManager()
+        
+        self._bno_controller = main.Bno055Controller.SerialPortReader('COM3', 'COM4', self._serial_data_queue, self._stop_event)
+        self._serial_data_thread = threading.Thread(target=self._bno_controller.start, daemon=True)
         
     def read_serial_ports(self):
         """Function to read data from the serial ports."""
         try:
-            self.bno_controller = main.Bno055Controller.SerialPortReader('COM4', 'COM3', self._serial_data_queue, self._stop_event)
-            self.serial_data_thread = threading.Thread(target=self.bno_controller.start, daemon=True)
-            self.serial_data_thread.start() 
+            self._serial_data_thread.start() 
         except AttributeError as e:
             print(f"Error starting the bno controller: {e}")
             self._stop_event.set()
@@ -102,7 +103,6 @@ class ApiController:
                     if not self._serial_data_queue.empty():
                         data_izq, data_der = self._serial_data_queue.get()
                         self._serial_data_queue.task_done()
-                        print(f"Data received: {data_izq} - {data_der}")
                         euler_izq, flexors_izq, calibration_izq = self.parse_sensor_data(data_izq)
                         euler_der, flexors_der, calibration_der = self.parse_sensor_data(data_der)
                         print(f"Data parsed: {euler_izq} - {euler_der}")
@@ -124,9 +124,9 @@ class ApiController:
             with self._serial_data_queue.mutex: self._serial_data_queue.queue.clear()
 
         finally:
-            self.bno_controller.stop()
-            self.serial_data_thread.join()  # Wait for the thread to finish
-            print("Program terminated.")
+            self._bno_controller.stop()
+            self._serial_data_thread.join()  # Wait for the thread to finish
+            print("\n\nProgram terminated.")
             
 if __name__ == "__main__":
     
