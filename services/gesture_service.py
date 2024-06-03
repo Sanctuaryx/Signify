@@ -11,7 +11,6 @@ script_dir = os.path.dirname("classes/gesture.py")
 sys.path.append(os.path.join(script_dir, '..'))
 
 import repositories.gesture_repository
-import classes.gesture
 
 class GestureService:
     def __init__(self):
@@ -19,24 +18,17 @@ class GestureService:
         self.gestures = None
 
     def _load_gestures(self):
-        gesture_data = self.gesture_repository.get_all_gestures()
+        gesture_data = self.gesture_repository.get_all_static_gestures()
         gestures = {}
 
         for gesture in gesture_data:
-            (
-                gesture_id, name, roll_threshold, roll_min, roll_max, pitch_threshold, pitch_min, pitch_max, yaw_threshold, yaw_min, yaw_max,
-                finger1_min, finger1_max, finger2_min, finger2_max, finger3_min, finger3_max, finger4_min, finger4_max, finger5_min, finger5_max
-            ) = gesture
+            (id, name, roll, pitch, yaw, finger1, finger2, finger3, finger4, finger5) = gesture
 
             flex_thresholds = [
-                (finger1_min, finger1_max),
-                (finger2_min, finger2_max),
-                (finger3_min, finger3_max),
-                (finger4_min, finger4_max),
-                (finger5_min, finger5_max)
+                finger1, finger2, finger3, finger4, finger5
             ]
 
-            gestures[name] = classes.gesture(name, roll_threshold, roll_min, roll_max, pitch_threshold, pitch_min, pitch_max, yaw_threshold, yaw_min, yaw_max, flex_thresholds)
+            #gestures[name] = classes.gesture(id, name, roll, pitch, yaw, flex_thresholds)
 
         self.gestures = gestures
 
@@ -63,15 +55,28 @@ class GestureService:
         :param finger_flex: List of finger flex values.
         :return: The gesture or None if no match is found.
         """
-        result_der = self.gesture_repository.get_static_gesture_by_values(euler_der, flexors_der)
+        result = self.gesture_repository.get_static_gesture_by_values(euler_izq, euler_der, flexors_izq, flexors_der)
+        if result:
+            return result
+        return None
+    
+    def recognise_dynamic_gesture(self, gesture_izq, gesture_der):
+        """
+        Retrieve a gesture based on provided values.
+
+        :param roll: Roll value.
+        :param pitch: Pitch value.
+        :param yaw: Yaw value.
+        :param finger_flex: List of finger flex values.
+        :return: The gesture or None if no match is found.
+        """
+        result_der = self.gesture_repository.get_dynamic_gesture_by_values(gesture_der)
         if result_der:
             return result_der
         
-        result_izq = self.gesture_repository.get_static_gesture_by_values(euler_izq, flexors_izq)
+        result_izq = self.gesture_repository.get_dynamic_gesture_by_values(gesture_izq)
         if result_izq:
             return result_izq
         
         return None
-    
-    #def check_gesture(euler_izq, flexors_izq, euler_der, flexors_der):
         

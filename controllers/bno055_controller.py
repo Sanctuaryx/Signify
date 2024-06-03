@@ -58,7 +58,7 @@ class SerialPortReader:
                     data_left = [part for part in data_left.strip('*').split('*') if part]
                     data_right = [part for part in data_right.strip('*').split('*') if part]
                     if len(data_left) == 3 and len(data_right) == 3:
-                        with self._data_queue.mutex: self._data_queue.put((data_left, data_right))
+                        self._data_queue.put((data_left, data_right))
                         time.sleep(0.01) 
                     
         except serial.SerialException as e:

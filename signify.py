@@ -34,7 +34,6 @@ sys.path.append(os.path.join(script_dir, '..'))
 import controllers.bno055_controller
 import services.calibration_service
 import services.text_to_speech_service
-import classes.gesture
 import services.file_management_service
 import services.gesture_service
 
@@ -96,6 +95,21 @@ class ApiController:
         euler = r.as_euler('xyz', degrees=True)
 
         return euler, flexors, calibration
+    
+    def _process_static_gesture(self, euler_izq, flexors_izq, euler_der, flexors_der):
+        """Process a static gesture if recognized."""
+        static_gesture = self._gesture_service.recognise_gesture_by_values(euler_izq, flexors_izq, euler_der, flexors_der)
+        if static_gesture:
+            self._process_gesture(static_gesture)
+
+    def _process_dynamic_gesture(self, euler_izq, flexors_izq, euler_der, flexors_der):
+        """Process a dynamic gesture if recognized."""
+        if len(self._potential_dynamic_gestures) == 20: 
+            dynamic_gesture = self._gesture_service.recognise_dynamic_gesture(self._potential_dynamic_gestures)
+            if dynamic_gesture:
+                self._process_gesture(dynamic_gesture)
+        else:
+            self._potential_dynamic_gestures.append([[euler_izq, flexors_izq], [euler_der, flexors_der]])
 
     def run(self):
         """Main loop to read and process serial data."""
@@ -104,14 +118,13 @@ class ApiController:
             while not self._stop_event.is_set():
                 try:
                     if not self._serial_data_queue.empty():
-                        with self._serial_data_queue.mutex: data_izq, data_der = list(self._serial_data_queue.queue)
+                        data_izq, data_der = self._serial_data_queue.get()
                         self._serial_data_queue.task_done()
                         
                         euler_izq, flexors_izq, calibration_izq = self._parse_sensor_data(data_izq)
                         euler_der, flexors_der, calibration_der = self._parse_sensor_data(data_der)
                         
-                        sys.stdout.write(f"\rData parsed: {euler_izq} - {euler_der} - {flexors_izq} - {flexors_der} - {calibration_izq} - {calibration_der}")
-                        sys.stdout.flush()
+                        print(f"\rData parsed: {euler_izq} - {euler_der} - {flexors_izq} - {flexors_der} - {calibration_izq} - {calibration_der}")
                             
                         if self._is_calibration_needed(calibration_izq, calibration_der):
                             print("Calibrating needed...")
@@ -119,17 +132,9 @@ class ApiController:
                             with self._serial_data_queue.mutex: self._serial_data_queue.queue.clear()
                             
                         else:
-                            static_gesture = self._gesture_service.recognise_gesture_by_values(euler_izq, flexors_izq, euler_der, flexors_der)
-                            if static_gesture:
-                                    self._process_gesture(static_gesture)
-                            if len(self._potential_dynamic_gestures) == 20: 
-                                dynamic_gesture = self._gesture_service.recognise_dynamic_gesture(self._potential_dynamic_gestures)
-                                if dynamic_gesture:
-                                    self._process_gesture(dynamic_gesture)
-                                    with self._serial_data_queue.mutex: self._serial_data_queue.queue.clear()
-                            else:
-                                self._potential_dynamic_gestures.append([[euler_izq, flexors_izq], [euler_der, flexors_der]])                                
-                               
+                            self._process_static_gesture(euler_izq, flexors_izq, euler_der, flexors_der)
+                            self._process_dynamic_gesture(euler_izq, flexors_izq, euler_der, flexors_der)
+                            
                 except Exception as e:
                     self._serial_data_queue.get()  # Remove the invalid data
                     
