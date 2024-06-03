@@ -55,15 +55,20 @@ class SerialPortReader:
 
                 # If data is available, put it in the queue
                 if data_left and data_right:
-                    self._data_queue.put((data_left, data_right))
-                
-            
+                    data_left = [part for part in data_left.strip('*').split('*') if part]
+                    data_right = [part for part in data_right.strip('*').split('*') if part]
+                    if len(data_left) == 3 and len(data_right) == 3:
+                        with self._data_queue.mutex: self._data_queue.put((data_left, data_right))
+                        time.sleep(0.01) 
+                    
         except serial.SerialException as e:
             print(f"Error opening the serial port: {e}")
             self._stop_event.set()
         except PermissionError as e:
             print(f"Permission denied accessing the serial port: {e}. Try running as Administrator or using sudo.")
             self._stop_event.set()
+        except Exception as e:
+            self._data_queue.get()  # Remove the invalid data
         finally:
             self._close_ports()
 

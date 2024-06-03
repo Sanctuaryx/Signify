@@ -47,8 +47,5 @@ class SpeechFileManager:
             print(f'Error playing audio: {e}')
             
     def play_speech_file(self):
-        """
-        Play a `.wav` audio file in a separate thread.
-        """
         # Start a new thread for audio playback
         self._play_audio()

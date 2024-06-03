@@ -6,29 +6,39 @@ import sys, os
 import pyttsx3
 
 # Get the directory where the script lives
-script_dir = os.path.dirname("main/ApiController.py")
+script_dir = os.path.dirname("signify.py")
 # Add the parent directory to sys.path
 sys.path.append(os.path.join(script_dir, '..'))
 
 # Get the directory where the script lives
-script_dir = os.path.dirname("main/TextToSpeechConverter.py")
+script_dir = os.path.dirname("controllers/bno055_controller.py")
 # Add the parent directory to sys.path
 sys.path.append(os.path.join(script_dir, '..'))
 
 # Get the directory where the script lives
-script_dir = os.path.dirname("main/GestureClass.py")
+script_dir = os.path.dirname("services/calibration_service.py")
 # Add the parent directory to sys.path
 sys.path.append(os.path.join(script_dir, '..'))
 
 # Get the directory where the script lives
-script_dir = os.path.dirname("main/FileController.py")
+script_dir = os.path.dirname("services/text_to_speech_service.py")
 # Add the parent directory to sys.path
 sys.path.append(os.path.join(script_dir, '..'))
 
-from main.ApiController import ApiController
-from main.GestureClass import recognize_letter
-from main.TextToSpeechConverter import TTSConverter
-from main.FileController import SpeechFileManager
+# Get the directory where the script lives
+script_dir = os.path.dirname("classes/gesture.py")
+# Add the parent directory to sys.path
+sys.path.append(os.path.join(script_dir, '..'))
+
+# Get the directory where the script lives
+script_dir = os.path.dirname("services/file_management_service.py")
+# Add the parent directory to sys.path
+sys.path.append(os.path.join(script_dir, '..'))
+
+from signify import ApiController
+from classes.gesture import recognize_letter
+from services.text_to_speech_service import TTSConverter
+from services.file_management_service import SpeechFileManager
 class TestGestureRecognition:
 
     def test_gesture_recognition(self):

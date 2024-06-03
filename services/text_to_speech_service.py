@@ -1,4 +1,5 @@
 from TTS.api import TTS
+import pyttsx3
 
 class TTSConverter:
     def __init__(self, model_name: str):
@@ -12,7 +13,16 @@ class TTSConverter:
         self.output_file = 'resources/audioResources/audioTracks/audio.wav'
         self.speaker_wav = 'resources/audioResources/speaker.wav'
         self.language = 'es'
-        print(f'modelos: {self.tts.list_models()}')
+        
+        self.engine = pyttsx3.init()
+        self.engine.setProperty('rate', 150)  # Speed of speech
+        self.engine.setProperty('volume', 1)  # Volume (0.0 to 1.0)
+        
+        # Check and set the available voices
+        voices = self.engine.getProperty('voices')
+        for voice in voices:
+            if 'spanish' in voice.languages:
+                self.engine.setProperty('voice', voice.id)
 
     def convert_text_to_audio(self, text: str, speaker_wav: str = None, language: str = None):
         """
@@ -27,3 +37,13 @@ class TTSConverter:
             self.tts.tts_to_file(text=text, file_path = self.output_file, speaker_wav=self.speaker_wav, language=self.language, split_sentences=True)
         else:
             self.tts.tts_to_file(text=text, file_path = self.output_file)
+            
+    def convert_text_to_audio_with_engine(self, text: str):
+        """
+        Convert text to audio using the initialized pyttsx3 model.
+
+        Args:
+            text (str): Text to convert to speech.
+        """
+        self.engine.save_to_file(text, "resources/audioResources/audioTracks/audio.wav")
+        self.engine.runAndWait()
