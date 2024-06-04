@@ -54,12 +54,11 @@ class SerialPortReader:
                 data_right = self.ser_right.readline().decode('utf-8').rstrip()
 
                 # If data is available, put it in the queue
-                if data_left and data_right:
+                if data_left and data_right and self._data_queue.not_full:
                     data_left = [part for part in data_left.strip('*').split('*') if part]
                     data_right = [part for part in data_right.strip('*').split('*') if part]
                     if len(data_left) == 3 and len(data_right) == 3:
                         self._data_queue.put((data_left, data_right))
-                        time.sleep(0.01) 
                     
         except serial.SerialException as e:
             print(f"Error opening the serial port: {e}")

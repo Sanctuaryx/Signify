@@ -83,7 +83,7 @@ class GestureRepository:
         conn.close()
         return gestures_data
 
-    def get_static_gesture_by_values(self, euler_izq, euler_der, flexor_izq, flexor_der, threshold=2):
+    def get_static_gesture_by_values(self, euler_izq, euler_der, flexor_izq, flexor_der, tolerance = 10):
         """
         Retrieves the closest static gesture name based on the given Euler angles and flexor values.
 
@@ -99,27 +99,41 @@ class GestureRepository:
         cursor = conn.cursor()
 
         query = '''
-        SELECT name, ((roll - ?) * (roll - ?)) AS distance_roll,
-        ((pitch - ?) * (pitch - ?)) AS distance_pitch, 
-        ((yaw - ?) * (yaw - ?)) AS distance_yaw,
-        ((finger1 - ?) * (finger1 - ?)) AS distance_finger1,
-        ((finger2 - ?) * (finger2 - ?)) AS distance_finger2,
-        ((finger3 - ?) * (finger3 - ?)) AS distance_finger3,
-        ((finger4 - ?) * (finger4 - ?)) AS distance_finger4,
-        ((finger5 - ?) * (finger5 - ?)) AS distance_finger5
-        FROM static_gestures
-        ORDER BY distance ASC
+        SELECT name
+        FROM gestures
+        WHERE
+        (izq_yaw BETWEEN ? AND ?) AND (izq_pitch BETWEEN ? AND ?) AND (izq_roll BETWEEN ? AND ?) AND
+        (flexor_izq_1 BETWEEN ? AND ?) AND
+        (flexor_izq_2 BETWEEN ? AND ?) AND
+        (flexor_izq_3 BETWEEN ? AND ?) AND
+        (flexor_izq_4 BETWEEN ? AND ?) AND
+        (flexor_izq_5 BETWEEN ? AND ?) AND
+        (der_yaw BETWEEN ? AND ?) AND (der_pitch BETWEEN ? AND ?) AND (der_roll BETWEEN ? AND ?) AND
+        (flexor_der_1 BETWEEN ? AND ?) AND
+        (flexor_der_2 BETWEEN ? AND ?) AND
+        (flexor_der_3 BETWEEN ? AND ?) AND
+        (flexor_der_4 BETWEEN ? AND ?) AND
+        (flexor_der_5 BETWEEN ? AND ?)
         LIMIT 1
         '''
         values = (
-            euler[0], euler[0], 
-            euler[1], euler[1],
-            euler[2], euler[2],
-            flexors[0], flexors[0],
-            flexors[1], flexors[1],
-            flexors[2], flexors[2],
-            flexors[3], flexors[3],
-            flexors[4], flexors[4]
+            euler_izq[0] - tolerance, euler_izq[0] + tolerance,
+            euler_izq[1] - tolerance, euler_izq[1] + tolerance,
+            euler_izq[2] - tolerance, euler_izq[2] + tolerance,
+            flexor_izq[0] - tolerance, flexor_izq[0] + tolerance,
+            flexor_izq[1] - tolerance, flexor_izq[1] + tolerance,
+            flexor_izq[2] - tolerance, flexor_izq[2] + tolerance,
+            flexor_izq[3] - tolerance, flexor_izq[3] + tolerance,
+            flexor_izq[4] - tolerance, flexor_izq[4] + tolerance,
+            
+            euler_der[0] - tolerance, euler_der[0] + tolerance,
+            euler_der[1] - tolerance, euler_der[1] + tolerance,
+            euler_der[2] - tolerance, euler_der[2] + tolerance,
+            flexor_der[0] - tolerance, flexor_der[0] + tolerance,
+            flexor_der[1] - tolerance, flexor_der[1] + tolerance,
+            flexor_der[2] - tolerance, flexor_der[2] + tolerance,
+            flexor_der[3] - tolerance, flexor_der[3] + tolerance,
+            flexor_der[4] - tolerance, flexor_der[4] + tolerance
         )
 
         cursor.execute(query, values)
@@ -127,8 +141,8 @@ class GestureRepository:
         result = cursor.fetchone()
         conn.close()
         
-        if result and result[1] <= threshold ** 2 and result[2] <= threshold ** 2 and result[3] <= threshold ** 2 and result[4] <= threshold ** 2 and result[5] <= threshold ** 2 and result[6] <= threshold ** 2 and result[7] <= threshold ** 2 and result[8] <= threshold ** 2:
-            return result[0]
+        if result:
+            return result
         return None
     
     def get_dynamic_gesture_by_values(self, gesture_data, threshold=2):
