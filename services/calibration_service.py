@@ -32,10 +32,10 @@ class BNO055Calibrator:
             
             data_izq, data_der = self._serial_data_queue.get()
             if data_source == 0 or data_source == "left":
-                data = data_izq.split('*')
+                self._last_saved_calibration = [int(item) for item in data_izq[2].split(',')]
             else:
-                data = data_der.split('*')
-            self._last_saved_calibration = [int(item) for item in data[2].split(',')]
+                self._last_saved_calibration = [int(item) for item in data_der[2].split(',')]
+            
             return self._last_saved_calibration
         
         except Exception:

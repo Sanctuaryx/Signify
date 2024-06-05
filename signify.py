@@ -74,7 +74,7 @@ class ApiController:
             
     def _is_calibration_needed(self, calibration_izq, calibration_der):
         """Check if calibration is needed based on the calibration data."""
-        return any(value < 3 for value in calibration_izq) or any(value < 3 for value in calibration_der)
+        return any(value < 2 for value in calibration_izq) or any(value < 2 for value in calibration_der)
 
     def _process_gesture(self, gesture):
         """Process a recognized gesture and ensure it follows the cooldown rules."""
@@ -83,6 +83,24 @@ class ApiController:
         self._last_gesture = gesture
         self._last_gesture_time = time.time()
         self._file_controller.play_speech_file()
+        
+    def _cross(self, v1, v2):
+        return np.cross(v1, v2)
+
+    def _get_positional_vectors(self, euler):
+        
+        roll_rad = np.radians(euler[0])
+        pitch_rad = np.radians(euler[1])
+        yaw_rad = np.radians(euler[2])
+
+        k = np.array([np.cos(yaw_rad) * np.cos(pitch_rad), np.sin(pitch_rad), np.sin(yaw_rad) * np.cos(pitch_rad)])
+        
+        y = np.array([0, 1, 0])
+        s = self._cross(k, y)
+        v = self._cross(s, k)
+        vrot = v * np.cos(roll_rad) + np.cross(k, v) * np.sin(roll_rad)        
+        print(f"K: {k} - V: {v} - Vrot: {vrot}")
+        return k, np.cross(k, vrot), vrot
 
     def _parse_sensor_data(self, data):
         """Parses the sensor data received from the serial port."""
@@ -119,7 +137,6 @@ class ApiController:
                 try:
                     if not self._serial_data_queue.empty():
                         data_izq, data_der = self._serial_data_queue.get()
-                        self._serial_data_queue.task_done()
                         
                         euler_izq, flexors_izq, calibration_izq = self._parse_sensor_data(data_izq)
                         euler_der, flexors_der, calibration_der = self._parse_sensor_data(data_der)
@@ -129,11 +146,12 @@ class ApiController:
                         if self._is_calibration_needed(calibration_izq, calibration_der):
                             print("Calibrating needed...")
                             self._calibration.calibrate()
-                            with self._serial_data_queue.mutex: self._serial_data_queue.queue.clear()
+                            self._serial_data_queue.queue.clear()
                             
                         else:
                             self._process_static_gesture(euler_izq, flexors_izq, euler_der, flexors_der)
                             self._process_dynamic_gesture(euler_izq, flexors_izq, euler_der, flexors_der)
+                        self._serial_data_queue.queue.clear()
                             
                 except Exception as e:
                     self._serial_data_queue.get()  # Remove the invalid data
