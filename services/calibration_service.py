@@ -55,21 +55,18 @@ class BNO055Calibrator:
             self.accel, self.gyro, self.mag, self.sys = self. _get_calibration_data(sensor_name)          
             sys.stdout.write(f"\rSystem: {self.sys}/3, Gyroscope: {self.gyro}/3, Accelerometer: {self.accel}/3, Magnetometer: {self.mag}/3")
             sys.stdout.flush()
-            time.sleep(1)
                 
         print("\nMagnetometer Calibration: Move the sensor slowly in different orientations while rotating it around all three axes.")
         while self.mag < 3 and not self._stop_event.is_set():
             self.accel, self.gyro, self.mag, self.sys = self. _get_calibration_data(sensor_name)            
             sys.stdout.write(f"\rSystem: {self.sys}/3, Gyroscope: {self.gyro}/3, Accelerometer: {self.accel}/3, Magnetometer: {self.mag}/3")
             sys.stdout.flush()
-            time.sleep(1)
             
         print("\nAccelerometer Calibration: Move the sensor slowly in a figure-eight motion around all three axes.")
         while self.accel < 3 and not self._stop_event.is_set():
             self.accel, self.gyro, self.mag, self.sys = self. _get_calibration_data(sensor_name)            
             sys.stdout.write(f"\rSystem: {self.sys}/3, Gyroscope: {self.gyro}/3, Accelerometer: {self.accel}/3, Magnetometer: {self.mag}/3")
             sys.stdout.flush()
-            time.sleep(1)
            
     def _wait_for_calibration(self, data_source, sensor_name):
         """
@@ -95,7 +92,6 @@ class BNO055Calibrator:
             print("\nStarting calibration of left sensor.")
             self._wait_for_calibration(0, "left")
             print("\nCalibration of left sensors complete, starting right sensor.")
-            time.sleep(2)
             self._wait_for_calibration(1, "right")
             print("\nBNO055 sensors calibrated.")
             

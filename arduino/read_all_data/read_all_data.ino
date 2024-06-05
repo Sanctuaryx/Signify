@@ -23,7 +23,7 @@
 #include <utility/imumaths.h>
 
 /** Set the delay between fresh samples **/
-# define BNO055_SAMPLERATE_DELAY_MS (250)
+# define BNO055_SAMPLERATE_DELAY_MS (300)
 
 /** The sensor mode will be Nine Degrees of Freedom mode, enabling all sensors and the fusion algorithm **/
 # define BNO055_OPERATION_MODE ()

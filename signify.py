@@ -43,6 +43,7 @@ import time
 import threading
 from queue import Queue
 import numpy as np
+import datetime
 
 class ApiController:
     def __init__(self):
@@ -136,23 +137,25 @@ class ApiController:
             while not self._stop_event.is_set():
                 try:
                     if not self._serial_data_queue.empty():
-                        data_izq, data_der = self._serial_data_queue.get()
+                        #data_izq, data_der = self._serial_data_queue.get()
+                        #self._serial_data_queue.task_done()
+                        print(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")[:-3])
+                        #euler_izq, flexors_izq, calibration_izq = self._parse_sensor_data(data_izq)
+                        #euler_der, flexors_der, calibration_der = self._parse_sensor_data(data_der)
                         
-                        euler_izq, flexors_izq, calibration_izq = self._parse_sensor_data(data_izq)
-                        euler_der, flexors_der, calibration_der = self._parse_sensor_data(data_der)
                         
-                        print(f"\rData parsed: {euler_izq} - {euler_der} - {flexors_izq} - {flexors_der} - {calibration_izq} - {calibration_der}")
+                        #if self._is_calibration_needed(calibration_izq, calibration_der):
+                         #   print("Calibrating needed...")
+                            #self._calibration.calibrate()
+                          #  self._serial_data_queue.queue.clear()
                             
-                        if self._is_calibration_needed(calibration_izq, calibration_der):
-                            print("Calibrating needed...")
-                            self._calibration.calibrate()
-                            self._serial_data_queue.queue.clear()
+                        #else:
+                            #self._process_static_gesture(euler_izq, flexors_izq, euler_der, flexors_der)
+                            #self._process_dynamic_gesture(euler_izq, flexors_izq, euler_der, flexors_der)
+                        print(f" - cola: {self._serial_data_queue.queue}\n")
                             
-                        else:
-                            self._process_static_gesture(euler_izq, flexors_izq, euler_der, flexors_der)
-                            self._process_dynamic_gesture(euler_izq, flexors_izq, euler_der, flexors_der)
-                        self._serial_data_queue.queue.clear()
-                            
+                        with self._serial_data_queue.mutex: self._serial_data_queue.queue.clear()
+            
                 except Exception as e:
                     self._serial_data_queue.get()  # Remove the invalid data
                     
