@@ -7,7 +7,7 @@ import threading
 from threading import Event
 
 class SerialPortReader:
-    def __init__(self, port_left: str, port_right: str, data_queue: Queue, stop_event: Event, baud_rate: int = 115200, timeout: float = 1.0):
+    def __init__(self, port_left: str, port_right: str, data_queue: Queue, stop_event: Event, baud_rate: int = 115200, timeout: float = 0.2):
         """
         Initializes the SerialPortReader class with two serial ports.
 
@@ -52,14 +52,14 @@ class SerialPortReader:
                 # Read and decode data from both ports
                 data_left = self.ser_left.readline().decode('utf-8').rstrip()
                 data_right = self.ser_right.readline().decode('utf-8').rstrip()
-                print(data_left, data_right)    
                     
                 # If data is available, put it in the queue
                 if data_left and data_right and self._data_queue.not_full:
-                    #data_left = [part for part in data_left.strip('*').split('*') if part]
-                    #data_right = [part for part in data_right.strip('*').split('*') if part]
-                    #if len(data_left) == 3 and len(data_right) == 3:
-                    self._data_queue.put((data_left, data_right))
+                    data_left = [part for part in data_left.strip('*').split('*') if part]
+                    data_right = [part for part in data_right.strip('*').split('*') if part]
+                    if len(data_left) == 3 and len(data_right) == 3:
+                        self._data_queue.put((data_left, data_right))
+                        
                     self.ser_left.reset_input_buffer()
                     self.ser_right.reset_input_buffer()
                     

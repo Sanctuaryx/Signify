@@ -47,7 +47,7 @@ import datetime
 
 class ApiController:
     def __init__(self):
-        sys.stdout.write("Initializing ApiController...")
+        print("Initializing ApiController...")
         self._last_gesture = None
         self._potential_dynamic_gestures = []
         self._last_gesture_time = 0
@@ -62,7 +62,6 @@ class ApiController:
         
         self._bno_controller = controllers.bno055_controller.SerialPortReader('COM3', 'COM4', self._serial_data_queue, self._stop_event)
         self._serial_data_thread = threading.Thread(target=self._bno_controller.start, daemon=True)
-        sys.stdout.flush()
 
         
     def _read_serial_ports(self):
@@ -117,12 +116,16 @@ class ApiController:
     
     def _process_static_gesture(self, euler_izq, flexors_izq, euler_der, flexors_der):
         """Process a static gesture if recognized."""
+
         static_gesture = self._gesture_service.recognise_gesture_by_values(euler_izq, flexors_izq, euler_der, flexors_der)
         if static_gesture:
             self._process_gesture(static_gesture)
+        
 
     def _process_dynamic_gesture(self, euler_izq, flexors_izq, euler_der, flexors_der):
         """Process a dynamic gesture if recognized."""
+        print(f"Euler izq: {euler_izq} - Flexors izq: {flexors_izq} - Euler der: {euler_der} - Flexors der: {flexors_der}")
+
         if len(self._potential_dynamic_gestures) == 20: 
             dynamic_gesture = self._gesture_service.recognise_dynamic_gesture(self._potential_dynamic_gestures)
             if dynamic_gesture:
@@ -137,12 +140,12 @@ class ApiController:
             while not self._stop_event.is_set():
                 try:
                     if not self._serial_data_queue.empty():
-                        #data_izq, data_der = self._serial_data_queue.get()
+                        data_izq, data_der = self._serial_data_queue.get()
                         #self._serial_data_queue.task_done()
                         print(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")[:-3])
-                        #euler_izq, flexors_izq, calibration_izq = self._parse_sensor_data(data_izq)
-                        #euler_der, flexors_der, calibration_der = self._parse_sensor_data(data_der)
-                        
+                        euler_izq, flexors_izq, calibration_izq = self._parse_sensor_data(data_izq)
+                        euler_der, flexors_der, calibration_der = self._parse_sensor_data(data_der)
+
                         
                         #if self._is_calibration_needed(calibration_izq, calibration_der):
                          #   print("Calibrating needed...")
@@ -150,9 +153,9 @@ class ApiController:
                           #  self._serial_data_queue.queue.clear()
                             
                         #else:
-                            #self._process_static_gesture(euler_izq, flexors_izq, euler_der, flexors_der)
-                            #self._process_dynamic_gesture(euler_izq, flexors_izq, euler_der, flexors_der)
-                        print(f" - cola: {self._serial_data_queue.queue}\n")
+                        self._process_static_gesture(euler_izq, flexors_izq, euler_der, flexors_der)
+                        print("s")
+                        self._process_dynamic_gesture(euler_izq, flexors_izq, euler_der, flexors_der)
                             
                         with self._serial_data_queue.mutex: self._serial_data_queue.queue.clear()
             

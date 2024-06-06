@@ -10,7 +10,7 @@ class GestureRepository:
         db_dynamic_path (str): The path to the dynamic gestures database file.
     """
 
-    def __init__(self, db_static_path='resources/SQL/int_dataBase/staticGestures.db', db_dynamic_path='resources/SQL/int_dataBase/dynamicGestures.db'):
+    def __init__(self, db_path='resources/SQL/int_dataBase/gestures.db'):
         """
         Initializes a new instance of the GestureRepository class.
 
@@ -18,8 +18,7 @@ class GestureRepository:
             db_static_path (str, optional): The path to the static gestures database file. Defaults to 'resources/SQL/int_dataBase/staticGestures.db'.
             db_dynamic_path (str, optional): The path to the dynamic gestures database file. Defaults to 'resources/SQL/int_dataBase/dynamicGestures.db'.
         """
-        self._static_db_path = db_static_path
-        self._dynamic_db_path = db_dynamic_path
+        self._db_path = db_path
         self._num_key_frames = 10
     
     def _extract_key_frames(self, gesture_data):
@@ -58,7 +57,7 @@ class GestureRepository:
         Returns:
             list: A list of tuples representing the static gestures data.
         """
-        conn = sqlite3.connect(self._static_db_path)
+        conn = sqlite3.connect(self._db_path)
         cursor = conn.cursor()
 
         cursor.execute("SELECT * FROM static_gestures")
@@ -74,7 +73,7 @@ class GestureRepository:
         Returns:
             list: A list of tuples representing the dynamic gestures data.
         """
-        conn = sqlite3.connect(self._dynamic_db_path)
+        conn = sqlite3.connect(self._db_path)
         cursor = conn.cursor()
 
         cursor.execute("SELECT * FROM dynamic_gestures")
@@ -83,7 +82,7 @@ class GestureRepository:
         conn.close()
         return gestures_data
 
-    def get_static_gesture_by_values(self, euler_izq, euler_der, flexor_izq, flexor_der, tolerance = 10):
+    def get_static_gesture_by_values(self, left_euler, right_euler, left_flexor, right_flexor, tolerance = 10):
         """
         Retrieves the closest static gesture name based on the given Euler angles and flexor values.
 
@@ -95,59 +94,60 @@ class GestureRepository:
         Returns:
             str or None: The name of the closest static gesture if it is within the threshold, None otherwise.
         """
-        conn = sqlite3.connect(self._static_db_path)
+
+        conn = sqlite3.connect(self._db_path)
         cursor = conn.cursor()
 
         query = '''
         SELECT name
-        FROM gestures
+        FROM static_gestures
         WHERE
-        (izq_yaw BETWEEN ? AND ?) AND (izq_pitch BETWEEN ? AND ?) AND (izq_roll BETWEEN ? AND ?) AND
-        (flexor_izq_1 BETWEEN ? AND ?) AND
-        (flexor_izq_2 BETWEEN ? AND ?) AND
-        (flexor_izq_3 BETWEEN ? AND ?) AND
-        (flexor_izq_4 BETWEEN ? AND ?) AND
-        (flexor_izq_5 BETWEEN ? AND ?) AND
-        (der_yaw BETWEEN ? AND ?) AND (der_pitch BETWEEN ? AND ?) AND (der_roll BETWEEN ? AND ?) AND
-        (flexor_der_1 BETWEEN ? AND ?) AND
-        (flexor_der_2 BETWEEN ? AND ?) AND
-        (flexor_der_3 BETWEEN ? AND ?) AND
-        (flexor_der_4 BETWEEN ? AND ?) AND
-        (flexor_der_5 BETWEEN ? AND ?)
+        (left_roll BETWEEN ? AND ?) AND (left_pitch BETWEEN ? AND ?) AND (left_yaw BETWEEN ? AND ?) AND
+        (left_flexor_1 BETWEEN ? AND ?) AND
+        (left_flexor_2 BETWEEN ? AND ?) AND
+        (left_flexor_3 BETWEEN ? AND ?) AND
+        (left_flexor_4 BETWEEN ? AND ?) AND
+        (left_flexor_5 BETWEEN ? AND ?) AND
+        (right_roll BETWEEN ? AND ?) AND (right_pitch BETWEEN ? AND ?) AND (right_yaw BETWEEN ? AND ?) AND
+        (right_flexor_1 BETWEEN ? AND ?) AND
+        (right_flexor_2 BETWEEN ? AND ?) AND
+        (right_flexor_3 BETWEEN ? AND ?) AND
+        (right_flexor_4 BETWEEN ? AND ?) AND
+        (right_flexor_5 BETWEEN ? AND ?)
         LIMIT 1
         '''
         values = (
-            euler_izq[0] - tolerance, euler_izq[0] + tolerance,
-            euler_izq[1] - tolerance, euler_izq[1] + tolerance,
-            euler_izq[2] - tolerance, euler_izq[2] + tolerance,
-            flexor_izq[0] - tolerance, flexor_izq[0] + tolerance,
-            flexor_izq[1] - tolerance, flexor_izq[1] + tolerance,
-            flexor_izq[2] - tolerance, flexor_izq[2] + tolerance,
-            flexor_izq[3] - tolerance, flexor_izq[3] + tolerance,
-            flexor_izq[4] - tolerance, flexor_izq[4] + tolerance,
+            left_euler[0] - tolerance, left_euler[0] + tolerance,
+            left_euler[1] - tolerance, left_euler[1] + tolerance,
+            left_euler[2] - tolerance, left_euler[2] + tolerance,
+            left_flexor[0] - tolerance, left_flexor[0] + tolerance,
+            left_flexor[1] - tolerance, left_flexor[1] + tolerance,
+            left_flexor[2] - tolerance, left_flexor[2] + tolerance,
+            left_flexor[3] - tolerance, left_flexor[3] + tolerance,
+            left_flexor[4] - tolerance, left_flexor[4] + tolerance,
             
-            euler_der[0] - tolerance, euler_der[0] + tolerance,
-            euler_der[1] - tolerance, euler_der[1] + tolerance,
-            euler_der[2] - tolerance, euler_der[2] + tolerance,
-            flexor_der[0] - tolerance, flexor_der[0] + tolerance,
-            flexor_der[1] - tolerance, flexor_der[1] + tolerance,
-            flexor_der[2] - tolerance, flexor_der[2] + tolerance,
-            flexor_der[3] - tolerance, flexor_der[3] + tolerance,
-            flexor_der[4] - tolerance, flexor_der[4] + tolerance
+            right_euler[0] - tolerance, right_euler[0] + tolerance,
+            right_euler[1] - tolerance, right_euler[1] + tolerance,
+            right_euler[2] - tolerance, right_euler[2] + tolerance,
+            right_flexor[0] - tolerance, right_flexor[0] + tolerance,
+            right_flexor[1] - tolerance, right_flexor[1] + tolerance,
+            right_flexor[2] - tolerance, right_flexor[2] + tolerance,
+            right_flexor[3] - tolerance, right_flexor[3] + tolerance,
+            right_flexor[4] - tolerance, right_flexor[4] + tolerance
         )
 
         cursor.execute(query, values)
-        
+
         result = cursor.fetchone()
         conn.close()
-        
+
         if result:
             return result
         return None
     
     def get_dynamic_gesture_by_values(self, gesture_data, threshold=2):
         
-        conn = sqlite3.connect(self._static_db_path)
+        conn = sqlite3.connect(self._db_path)
         cursor = conn.cursor()
 
         key_data = self._extract_key_frames(gesture_data)
@@ -159,7 +159,7 @@ class GestureRepository:
         
         # Construct the SQL query for distance calculation
         query = '''
-        SELECT name, rolls, pitchs, yaws, flexor1s, flexor2s, flexor3s, flexor4s, flexor5s,
+        SELECT name, rolls, pitches, yaws, flexor1s, flexor2s, flexor3s, flexor4s, flexor5s,
         FROM dynamic_gestures
         ORDER BY total_distance ASC
         LIMIT 1
