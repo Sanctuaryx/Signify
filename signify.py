@@ -124,12 +124,13 @@ class ApiController:
 
     def _process_dynamic_gesture(self, euler_izq, flexors_izq, euler_der, flexors_der):
         """Process a dynamic gesture if recognized."""
-        print(f"Euler izq: {euler_izq} - Flexors izq: {flexors_izq} - Euler der: {euler_der} - Flexors der: {flexors_der}")
-
-        if len(self._potential_dynamic_gestures) == 20: 
+        if len(self._potential_dynamic_gestures) == 5:
+            print("ada") 
             dynamic_gesture = self._gesture_service.recognise_dynamic_gesture(self._potential_dynamic_gestures)
+            print("ada2")
             if dynamic_gesture:
                 self._process_gesture(dynamic_gesture)
+            self._potential_dynamic_gestures.clear()
         else:
             self._potential_dynamic_gestures.append([[euler_izq, flexors_izq], [euler_der, flexors_der]])
 
@@ -146,6 +147,8 @@ class ApiController:
                         euler_izq, flexors_izq, calibration_izq = self._parse_sensor_data(data_izq)
                         euler_der, flexors_der, calibration_der = self._parse_sensor_data(data_der)
 
+                        print(f"Euler izq: {euler_izq} - Flexors izq: {flexors_izq} - Euler der: {euler_der} - Flexors der: {flexors_der}")
+
                         
                         #if self._is_calibration_needed(calibration_izq, calibration_der):
                          #   print("Calibrating needed...")
@@ -154,7 +157,6 @@ class ApiController:
                             
                         #else:
                         self._process_static_gesture(euler_izq, flexors_izq, euler_der, flexors_der)
-                        print("s")
                         self._process_dynamic_gesture(euler_izq, flexors_izq, euler_der, flexors_der)
                             
                         with self._serial_data_queue.mutex: self._serial_data_queue.queue.clear()

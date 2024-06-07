@@ -55,12 +55,12 @@ class GestureService:
         :param finger_flex: List of finger flex values.
         :return: The gesture or None if no match is found.
         """
-        result = self.gesture_repository.get_static_gesture_by_values(euler_izq, euler_der, flexors_izq, flexors_der)
+        result = self.gesture_repository.findClosestStaticSingleGestureByValue(euler_izq, euler_der, flexors_izq, flexors_der)
         if result:
             return result
         return None
     
-    def recognise_dynamic_gesture(self, gesture_izq, gesture_der):
+    def recognise_dynamic_gesture(self, list_of_gestures):
         """
         Retrieve a gesture based on provided values.
 
@@ -70,11 +70,14 @@ class GestureService:
         :param finger_flex: List of finger flex values.
         :return: The gesture or None if no match is found.
         """
-        result_der = self.gesture_repository.get_dynamic_gesture_by_values(gesture_der)
+        gesture_izq = list_of_gestures[0::2]
+        gesture_der = list_of_gestures[1::2]
+        print("a")
+        result_der = self.gesture_repository.findClosestDynamicGesture(gesture_der)
         if result_der:
             return result_der
-        
-        result_izq = self.gesture_repository.get_dynamic_gesture_by_values(gesture_izq)
+
+        result_izq = self.gesture_repository.findClosestDynamicGesture(gesture_izq)
         if result_izq:
             return result_izq
         

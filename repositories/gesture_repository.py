@@ -1,3 +1,4 @@
+from collections import defaultdict
 import sqlite3
 import numpy as np
 
@@ -19,7 +20,9 @@ class GestureRepository:
             db_dynamic_path (str, optional): The path to the dynamic gestures database file. Defaults to 'resources/SQL/int_dataBase/dynamicGestures.db'.
         """
         self._db_path = db_path
-        self._num_key_frames = 10
+        self.dynamic_gestures = self._get_all_dynamic_gestures()
+        self.static_gestures = self._get_all_static_gestures()
+        self._num_key_frames = 5
     
     def _extract_key_frames(self, gesture_data):
         """
@@ -50,39 +53,77 @@ class GestureRepository:
         
         return key_frames
 
-    def get_all_static_gestures(self):
+    def _get_all_static_gestures(self):
         """
         Retrieves all static gestures from the database.
 
         Returns:
             list: A list of tuples representing the static gestures data.
         """
-        conn = sqlite3.connect(self._db_path)
-        cursor = conn.cursor()
+        try:
+            attributes = [
+            'id', 'name',
+            'left_roll', 'right_roll',
+            'left_pitch', 'right_pitch',
+            'left_yaw', 'right_yaw',
+            'left_flexor_1', 'right_flexor_1',
+            'left_flexor_2', 'right_flexor_2',
+            'left_flexor_3', 'right_flexor_3',
+            'left_flexor_4', 'right_flexor_4',
+            'left_flexor_5', 'right_flexor_5'
+            ]
+            
+            conn = sqlite3.connect(self._db_path)
+            cursor = conn.cursor()
 
-        cursor.execute("SELECT * FROM static_gestures")
-        gestures_data = cursor.fetchall()
-
-        conn.close()
-        return gestures_data
+            cursor.execute("SELECT * FROM static_gestures")
+            gestures_data = cursor.fetchall()
+            conn.close()
+            
+            unpacked_values = map(dict(zip(attributes)), gestures_data)
+            self.static_gestures = { attr: {unpacked[attr]: unpacked['name'] for unpacked in unpacked_values}for attr in attributes}
+            print(f"Indexes: {self.static_gestures}")
+        
+        except Exception as e:
+            print(f"Error retrieving static gestures: {e}")
+            return None
     
-    def get_all_dynamic_gestures(self):
+    def _get_all_dynamic_gestures(self):
         """
         Retrieves all dynamic gestures from the database.
 
         Returns:
             list: A list of tuples representing the dynamic gestures data.
         """
-        conn = sqlite3.connect(self._db_path)
-        cursor = conn.cursor()
+        try:
+            
+            attributes = [
+            'id', 'name',
+            'left_roll', 'right_roll',
+            'left_pitch', 'right_pitch',
+            'left_yaw', 'right_yaw',
+            'left_flexor_1', 'right_flexor_1',
+            'left_flexor_2', 'right_flexor_2',
+            'left_flexor_3', 'right_flexor_3',
+            'left_flexor_4', 'right_flexor_4',
+            'left_flexor_5', 'right_flexor_5'
+            ]
+            
+            conn = sqlite3.connect(self._db_path)
+            cursor = conn.cursor()
 
-        cursor.execute("SELECT * FROM dynamic_gestures")
-        gestures_data = cursor.fetchall()
+            cursor.execute("SELECT * FROM dynamic_gestures")
+            gestures_data = cursor.fetchall()
+            conn.close()
 
-        conn.close()
-        return gestures_data
+            unpacked_values = map(dict(zip(attributes)), gestures_data)
+            self.dynamic_gestures = { attr: {unpacked[attr]: unpacked['name'] for unpacked in unpacked_values} for attr in attributes}
+            
+        except Exception as e:
+            print(f"Error retrieving dynamic gestures: {e}")
+            return None
 
-    def get_static_gesture_by_values(self, left_euler, right_euler, left_flexor, right_flexor, tolerance = 10):
+    def findClosestStaticSingleGestureByValue(self, left_euler, right_euler, left_flexor, right_flexor, tolerance = 10):
         """
         Retrieves the closest static gesture name based on the given Euler angles and flexor values.
 
@@ -95,83 +136,108 @@ class GestureRepository:
             str or None: The name of the closest static gesture if it is within the threshold, None otherwise.
         """
 
-        conn = sqlite3.connect(self._db_path)
-        cursor = conn.cursor()
+        return [self.static_gestures.get(attribute, {}).get(value, None)]
 
-        query = '''
-        SELECT name
-        FROM static_gestures
-        WHERE
-        (left_roll BETWEEN ? AND ?) AND (left_pitch BETWEEN ? AND ?) AND (left_yaw BETWEEN ? AND ?) AND
-        (left_flexor_1 BETWEEN ? AND ?) AND
-        (left_flexor_2 BETWEEN ? AND ?) AND
-        (left_flexor_3 BETWEEN ? AND ?) AND
-        (left_flexor_4 BETWEEN ? AND ?) AND
-        (left_flexor_5 BETWEEN ? AND ?) AND
-        (right_roll BETWEEN ? AND ?) AND (right_pitch BETWEEN ? AND ?) AND (right_yaw BETWEEN ? AND ?) AND
-        (right_flexor_1 BETWEEN ? AND ?) AND
-        (right_flexor_2 BETWEEN ? AND ?) AND
-        (right_flexor_3 BETWEEN ? AND ?) AND
-        (right_flexor_4 BETWEEN ? AND ?) AND
-        (right_flexor_5 BETWEEN ? AND ?)
-        LIMIT 1
-        '''
-        values = (
-            left_euler[0] - tolerance, left_euler[0] + tolerance,
-            left_euler[1] - tolerance, left_euler[1] + tolerance,
-            left_euler[2] - tolerance, left_euler[2] + tolerance,
-            left_flexor[0] - tolerance, left_flexor[0] + tolerance,
-            left_flexor[1] - tolerance, left_flexor[1] + tolerance,
-            left_flexor[2] - tolerance, left_flexor[2] + tolerance,
-            left_flexor[3] - tolerance, left_flexor[3] + tolerance,
-            left_flexor[4] - tolerance, left_flexor[4] + tolerance,
+        
+        
+    def findClosestStaticBothGestureByValue(self, left_euler, right_euler, left_flexor, right_flexor, tolerance = 10):
+        """
+        Retrieves the closest static gesture name based on the given Euler angles and flexor values.
+
+        Args:
+            euler (list): A list of Euler angles [roll, pitch, yaw].
+            flexors (list): A list of flexor values for each finger [finger1, finger2, finger3, finger4, finger5].
+            threshold (int, optional): The maximum distance threshold for a gesture to be considered a match. Defaults to 2.
+
+        Returns:
+            str or None: The name of the closest static gesture if it is within the threshold, None otherwise.
+        """
+
+        try:
+                
+            conn = sqlite3.connect(self._db_path)
+            cursor = conn.cursor()
+
+            query = '''
+            SELECT name
+            FROM static_gestures
+            WHERE
+            (left_roll BETWEEN ? AND ?) AND (left_pitch BETWEEN ? AND ?) AND (left_yaw BETWEEN ? AND ?) AND
+            (left_flexor_1 BETWEEN ? AND ?) AND
+            (left_flexor_2 BETWEEN ? AND ?) AND
+            (left_flexor_3 BETWEEN ? AND ?) AND
+            (left_flexor_4 BETWEEN ? AND ?) AND
+            (left_flexor_5 BETWEEN ? AND ?) AND
+            (right_roll BETWEEN ? AND ?) AND (right_pitch BETWEEN ? AND ?) AND (right_yaw BETWEEN ? AND ?) AND
+            (right_flexor_1 BETWEEN ? AND ?) AND
+            (right_flexor_2 BETWEEN ? AND ?) AND
+            (right_flexor_3 BETWEEN ? AND ?) AND
+            (right_flexor_4 BETWEEN ? AND ?) AND
+            (right_flexor_5 BETWEEN ? AND ?)
+            LIMIT 1
+            '''
+            values = (
+                left_euler[0] - tolerance, left_euler[0] + tolerance,
+                left_euler[1] - tolerance, left_euler[1] + tolerance,
+                left_euler[2] - tolerance, left_euler[2] + tolerance,
+                left_flexor[0] - tolerance, left_flexor[0] + tolerance,
+                left_flexor[1] - tolerance, left_flexor[1] + tolerance,
+                left_flexor[2] - tolerance, left_flexor[2] + tolerance,
+                left_flexor[3] - tolerance, left_flexor[3] + tolerance,
+                left_flexor[4] - tolerance, left_flexor[4] + tolerance,
+                
+                right_euler[0] - tolerance, right_euler[0] + tolerance,
+                right_euler[1] - tolerance, right_euler[1] + tolerance,
+                right_euler[2] - tolerance, right_euler[2] + tolerance,
+                right_flexor[0] - tolerance, right_flexor[0] + tolerance,
+                right_flexor[1] - tolerance, right_flexor[1] + tolerance,
+                right_flexor[2] - tolerance, right_flexor[2] + tolerance,
+                right_flexor[3] - tolerance, right_flexor[3] + tolerance,
+                right_flexor[4] - tolerance, right_flexor[4] + tolerance
+            )
+
+            cursor.execute(query, values)
+            result = cursor.fetchone()
+            conn.close()
             
-            right_euler[0] - tolerance, right_euler[0] + tolerance,
-            right_euler[1] - tolerance, right_euler[1] + tolerance,
-            right_euler[2] - tolerance, right_euler[2] + tolerance,
-            right_flexor[0] - tolerance, right_flexor[0] + tolerance,
-            right_flexor[1] - tolerance, right_flexor[1] + tolerance,
-            right_flexor[2] - tolerance, right_flexor[2] + tolerance,
-            right_flexor[3] - tolerance, right_flexor[3] + tolerance,
-            right_flexor[4] - tolerance, right_flexor[4] + tolerance
-        )
+            if result:
+                return result
+            return None
 
-        cursor.execute(query, values)
-
-        result = cursor.fetchone()
-        conn.close()
-
-        if result:
-            return result
-        return None
+        except Exception as e:
+            return None
     
-    def get_dynamic_gesture_by_values(self, gesture_data, threshold=2):
+    def findClosestDynamicGesture(self, gesture_data, threshold=2):
         
-        conn = sqlite3.connect(self._db_path)
-        cursor = conn.cursor()
+        try:
+            conn = sqlite3.connect(self._db_path)
+            cursor = conn.cursor()
 
-        key_data = self._extract_key_frames(gesture_data)
-        values = []
-        for frame in key_data:
-            euler_angles, flexors = frame
-            values.extend(euler_angles)
-            values.extend(flexors)
+            key_data = self._extract_key_frames(gesture_data)
+            values = []
+            for frame in key_data:
+                euler_angles, flexors = frame
+                values.extend(euler_angles)
+                values.extend(flexors)
+            
+            # Construct the SQL query for distance calculation
+            query = '''
+            SELECT name, rolls, pitches, yaws, flexor1s, flexor2s, flexor3s, flexor4s, flexor5s,
+            FROM dynamic_gestures
+            ORDER BY total_distance ASC
+            LIMIT 1
+            '''
+            cursor.execute(query, values * 2)
+            
+            result = cursor.fetchone()
+            
+            conn.close()
+            print(f'Result: {result} - result[1]: {result[1] if result else None} - result[1]: {result[0] if result else None}')
+            if result and result[1] <= threshold:
+                return result[0]
+            return None
         
-        # Construct the SQL query for distance calculation
-        query = '''
-        SELECT name, rolls, pitches, yaws, flexor1s, flexor2s, flexor3s, flexor4s, flexor5s,
-        FROM dynamic_gestures
-        ORDER BY total_distance ASC
-        LIMIT 1
-        '''
-        
-        cursor.execute(query, values * 2)
-        
-        result = cursor.fetchone()
-        
-        conn.close()
-        
-        if result and result[1] <= threshold:
-            return result[0]
-        return None
+        except Exception as e:
+            print(f"Error retrieving dynamic gesture: {e}")
+            return None
 
