@@ -31,10 +31,17 @@ def setup_database():
 
     create_tables(cursor)
     
+    insert_gesture(cursor, 'a', '2.0, 2.0, 2.0, 2, 2, 2, 2, 2, 2.0, 2.0, 2.0, 2.0, 1,,', '2.0, 2.0, 2.0, 2, 2, 2, 2, 2, 2.0, 2.0, 2.0, 2.0, 1,,')
+
+    cursor.execute("SELECT * FROM gestures")
+    gestures_data = cursor.fetchall()
+    print(gestures_data)
+            
     conn.commit()
     conn.close()
 
     print(f"Database and tables created successfully at {database_path}.")
+    
     
 if __name__ == '__main__':
     setup_database()
