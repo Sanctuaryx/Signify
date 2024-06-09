@@ -1,58 +1,123 @@
+from enum import Enum
+
+class MovementAxis(Enum):
+    X = 0
+    Y = 1
+    Z = 2
+    
+class Hand:
+    def __init__(self, roll, pitch, yaw, finger_flex, gyro_axis: MovementAxis = None, accel_axis: MovementAxis = None, mean_acceleration = None, std_acceleration = None, mean_angular_velocity = None, std_angular_velocity = None):
+        self._roll = roll
+        self._pitch = pitch
+        self._yaw = yaw
+        self._finger_flex = finger_flex
+        self._mean_acceleration = mean_acceleration
+        self._std_acceleration = std_acceleration
+        self._mean_angular_velocity = mean_angular_velocity
+        self._std_angular_velocity = std_angular_velocity
+        self.gyro_axis = gyro_axis
+        self.accel_axis = accel_axis
+
+    @property
+    def roll(self):
+        return self._roll
+    
+    @roll.setter
+    def set_roll(self, roll):
+        self._roll = roll
+    
+    @property
+    def pitch(self):
+        return self._pitch
+    
+    @pitch.setter
+    def set_pitch(self, pitch):
+        self._pitch = pitch
+    
+    @property
+    def yaw(self):
+        return self._yaw
+    
+    @yaw.setter
+    def set_yaw(self, yaw):
+        self._yaw = yaw
+    
+    @property
+    def finger_flex(self):
+        return self._finger_flex
+    
+    @finger_flex.setter
+    def set_finger_flex(self, finger_flex):
+        self._finger_flex = finger_flex
+    
+    @property
+    def mean_acceleration(self):
+        return self._mean_acceleration
+    
+    @mean_acceleration.setter
+    def set_mean_acceleration(self, mean_acceleration):
+        self._mean_acceleration = mean_acceleration
+    
+    @property
+    def std_acceleration(self):
+        return self._std_acceleration
+    
+    @std_acceleration.setter
+    def set_std_acceleration(self, std_acceleration):
+        self._std_acceleration = std_acceleration
+    
+    @property
+    def mean_angular_velocity(self):
+        return self._mean_angular_velocity
+    
+    @mean_angular_velocity.setter
+    def set_mean_angular_velocity(self, mean_angular_velocity):
+        self._mean_angular_velocity = mean_angular_velocity
+    
+    @property
+    def std_angular_velocity(self):
+        return self._std_angular_velocity
+    
+    @std_angular_velocity.setter
+    def set_std_angular_velocity(self, std_angular_velocity):
+        self._std_angular_velocity = std_angular_velocity
+    
 class Gesture:
-    def __init__(self, id, name, roll, pitch, yaw, finger_flex_1, finger_flex_2, finger_flex_3, finger_flex_4, finger_flex_5):
-        self.id = id
-        self.name = name
-        self.roll = roll
-        self.pitch = pitch
-        self.yaw = yaw
-        self.finger_flex_1 = finger_flex_1
-        self.finger_flex_2 = finger_flex_2
-        self.finger_flex_3 = finger_flex_3
-        self.finger_flex_4 = finger_flex_4
-        self.finger_flex_5 = finger_flex_5
-
-    def _check_value(self, value, threshold=None, min_val=None, max_val=None):
-        """Helper function to check if a value meets the given threshold or falls within a range."""
-        return (threshold is None or value > threshold) and \
-               (min_val is None or max_val is None or min_val <= value <= max_val)
-               
-    def _classify_flex(self, flx):
-        """
-        Classifies the finger flexion values based on the finger flexion thresholds.
-
-        Args:
-            flx (list): A list of finger flexion values.
-
-        Returns:
-            list: A list of boolean values indicating whether each finger's flexion value matches the corresponding threshold.
-        """
-        return [self.finger_flex_thresholds[i][0] <= flex <= self.finger_flex_thresholds[i][1] for i, flex in enumerate(flx)]
-
-    def check_gesture(self, eul, flx):
-        """Check if the Euler angles and finger flexions meet the criteria for this gesture."""
-        roll_match = self._check_value(eul[0], self.roll_threshold, self.roll_min, self.roll_max)
-        pitch_match = self._check_value(eul[1], self.pitch_threshold, self.pitch_min, self.pitch_max)
-        yaw_match = self._check_value(eul[2], self.yaw_threshold, self.yaw_min, self.yaw_max)
-
-        flex_matches = self._classify_flex(flx)
-
-        return roll_match and pitch_match and yaw_match and all(flex_matches)
-
-gesture_a = Gesture(
-    roll_threshold=None,  # No explicit roll threshold
-    roll_range=(-10, 10),  # Roll angle range
-    pitch_threshold=None,  # No explicit pitch threshold
-    pitch_range=(-10, 10),  # Pitch angle range
-    yaw_threshold=20,  # Yaw threshold (example)
-    yaw_range=(None, None),  # No explicit yaw range
-    finger_flex_thresholds=([(-10, 10), (-10, 10), (-10, 10), (-10, 10), (-10, 10)])  # Example thresholds
-)
-
-# Dictionary mapping gestures to lambda functions for checking them
-dactylology_checks = {
-    'A': lambda eul_izq, flx_izq, eul_der, flx_der: gesture_a.check_gesture(eul_izq, flx_izq) or gesture_a.check_gesture(eul_der, flx_der),
-}
-
-def recognize_letter(eul_izq, flx_izq, eul_der, flx_der):
-    return next((letter for letter, check in dactylology_checks.items() if check(eul_izq, flx_izq, eul_der, flx_der)), None)
-
+    def __init__(self, id, name, left_hand : Hand, right_hand : Hand):
+        self._id = id
+        self._name = name
+        self._left_hand = left_hand
+        self._right_hand = right_hand
+      
+    @property  
+    def id(self):
+        return self._id
+    
+    @id.setter
+    def set_id(self, id):
+        self._id = id
+    
+    @property
+    def name(self):
+        return self._name
+    
+    @name.setter
+    def set_name(self, name):
+        self._name = name
+    
+    @property
+    def left_hand(self):
+        return self._left_hand
+    
+    @left_hand.setter
+    def set_left_hand(self, left_hand):
+        self._left_hand = left_hand
+    
+    @property
+    def right_hand(self):
+        return self._right_hand
+    
+    @right_hand.setter
+    def set_right_hand(self, right_hand):
+        self._right_hand = right_hand
+    

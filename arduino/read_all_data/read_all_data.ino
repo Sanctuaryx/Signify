@@ -81,19 +81,16 @@ void setup(void){
  */
 void loop(void){
 
-  imu::Quaternion quat=bno.getQuat();
+  sensors_event_t orientationData, angVelocityData , linearAccelData;
+  bno.getEvent(&orientationData, Adafruit_BNO055::VECTOR_EULER);
+  bno.getEvent(&angVelocityData, Adafruit_BNO055::VECTOR_GYROSCOPE);
+  bno.getEvent(&linearAccelData, Adafruit_BNO055::VECTOR_LINEARACCEL);
 
-  Serial.print(quat.w());
-  Serial.print(",");
-  Serial.print(quat.x());
-  Serial.print(",");
-  Serial.print(quat.y());
-  Serial.print(",");
-  Serial.print(quat.z());
-  Serial.print("*");
-
+  eulerEvent(&orientationData);
+  gyroEvent(&angVelocityData);
+  accelEvent(&linearAccelData);
   flexorEvent();
-  calibrarionEvent();
+  calibrationEvent();
 
   Serial.println();
   delay(BNO055_SAMPLERATE_DELAY_MS);
@@ -124,6 +121,56 @@ void flexorEvent() {
   V4 = analogRead(P4); // Lee el valor de la entrada analógica en el pin A7
   Serial.print(V4); // Imprime el valor analógico en el monitor serial
 
+  Serial.print("*");
+
+
+}
+
+/*!
+* @brief  Display the Euler data
+*
+* @return void
+*/
+void eulerEvent(sensors_event_t* orientationEvent) {
+  Serial.print(orientationEvent->orientation.x);
+  Serial.print(",");
+  Serial.print(orientationEvent->orientation.y);
+  Serial.print(",");
+  Serial.print(orientationEvent->orientation.z);
+  Serial.print("*");
+}
+
+/*!
+* @brief  Display the angular velocity data
+*
+* @return void
+*/
+void gyroEvent(sensors_event_t* gyroEvent) {
+  if (gyroEvent->type == SENSOR_TYPE_GYROSCOPE) {
+    Serial.print(gyroEvent->gyro.x);
+    Serial.print(",");
+    Serial.print(gyroEvent->gyro.y);
+    Serial.print(",");
+    Serial.print(gyroEvent->gyro.z);
+    Serial.print("*");
+  }
+  
+}
+
+/*!
+* @brief  Display the linear acceleration data
+*
+* @return void
+*/
+void accelEvent(sensors_event_t* accelEvent) {
+  if (accelEvent->type == SENSOR_TYPE_LINEAR_ACCELERATION) {
+    Serial.print(accelEvent->acceleration.x);
+    Serial.print(",");
+    Serial.print(accelEvent->acceleration.y);
+    Serial.print(",");
+    Serial.print(accelEvent->acceleration.z);
+    Serial.print("*");
+  }
 }
 
 
@@ -132,12 +179,11 @@ void flexorEvent() {
 *
 * @return void
 */
-void calibrarionEvent() {
+void calibrationEvent() {
 
   uint8_t system, gyro, accel, mag = 0;
   bno.getCalibration(&system, &gyro, &accel, &mag);
 
-  Serial.print("*");
   Serial.print(accel);
   Serial.print(",");
   Serial.print(gyro);

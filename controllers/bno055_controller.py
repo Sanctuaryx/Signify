@@ -7,7 +7,7 @@ import threading
 from threading import Event
 
 class SerialPortReader:
-    def __init__(self, port_left: str, port_right: str, data_queue: Queue, stop_event: Event, baud_rate: int = 115200, timeout: float = 0.2):
+    def __init__(self, port_left: str, port_right: str, data_queue: Queue, stop_event: Event, baud_rate: int = 115200, timeout: float = 0.3):
         """
         Initializes the SerialPortReader class with two serial ports.
 
@@ -57,11 +57,10 @@ class SerialPortReader:
                 if data_left and data_right and self._data_queue.not_full:
                     data_left = [part for part in data_left.strip('*').split('*') if part]
                     data_right = [part for part in data_right.strip('*').split('*') if part]
-                    if len(data_left) == 3 and len(data_right) == 3:
+                    if len(data_left) == 5 and len(data_right) == 5:
                         self._data_queue.put((data_left, data_right))
-                        
-                    self.ser_left.reset_input_buffer()
-                    self.ser_right.reset_input_buffer()
+                        self.ser_left.reset_input_buffer()
+                        self.ser_right.reset_input_buffer()
                     
         except serial.SerialException as e:
             print(f"Error opening the serial port: {e}")

@@ -22,6 +22,11 @@ script_dir = os.path.dirname("classes/gesture.py")
 sys.path.append(os.path.join(script_dir, '..'))
 
 # Get the directory where the script lives
+script_dir = os.path.dirname("classes/gesture_dto.py")
+# Add the parent directory to sys.path
+sys.path.append(os.path.join(script_dir, '..'))
+
+# Get the directory where the script lives
 script_dir = os.path.dirname("services/gesture_service.py")
 # Add the parent directory to sys.path
 sys.path.append(os.path.join(script_dir, '..'))
@@ -36,14 +41,14 @@ import services.calibration_service
 import services.text_to_speech_service
 import services.file_management_service
 import services.gesture_service
+import classes.gesture as Gesture
+import classes.gesture_dto as GestureDto
+import services.gesture_mapper_service
 
-import math
 from scipy.spatial.transform import Rotation as R
 import time
 import threading
 from queue import Queue
-import numpy as np
-import datetime
 
 class ApiController:
     def __init__(self):
@@ -59,8 +64,9 @@ class ApiController:
         self._calibration = services.calibration_service.BNO055Calibrator(self._serial_data_queue, self._stop_event)
         self._file_controller = services.file_management_service.SpeechFileManager()
         self._gesture_service = services.gesture_service.GestureService()
+        self._gesture_mapper = services.gesture_mapper_service.GestureMapperService()
         
-        self._bno_controller = controllers.bno055_controller.SerialPortReader('COM3', 'COM4', self._serial_data_queue, self._stop_event)
+        self._bno_controller = controllers.bno055_controller.SerialPortRearight('COM3', 'COM4', self._serial_data_queue, self._stop_event)
         self._serial_data_thread = threading.Thread(target=self._bno_controller.start, daemon=True)
 
         
@@ -72,9 +78,9 @@ class ApiController:
             print(f"Error starting the bno controller: {e}")
             self._stop_event.set()
             
-    def _is_calibration_needed(self, calibration_izq, calibration_der):
+    def _is_calibration_needed(self, calibration_left, calibration_right):
         """Check if calibration is needed based on the calibration data."""
-        return any(value < 2 for value in calibration_izq) or any(value < 2 for value in calibration_der)
+        return any(value < 2 for value in calibration_left) or any(value < 2 for value in calibration_right)
 
     def _process_gesture(self, gesture):
         """Process a recognized gesture and ensure it follows the cooldown rules."""
@@ -83,56 +89,52 @@ class ApiController:
         self._last_gesture = gesture
         self._last_gesture_time = time.time()
         self._file_controller.play_speech_file()
-        
-    def _cross(self, v1, v2):
-        return np.cross(v1, v2)
 
-    def _get_positional_vectors(self, euler):
-        
-        roll_rad = np.radians(euler[0])
-        pitch_rad = np.radians(euler[1])
-        yaw_rad = np.radians(euler[2])
-
-        k = np.array([np.cos(yaw_rad) * np.cos(pitch_rad), np.sin(pitch_rad), np.sin(yaw_rad) * np.cos(pitch_rad)])
-        
-        y = np.array([0, 1, 0])
-        s = self._cross(k, y)
-        v = self._cross(s, k)
-        vrot = v * np.cos(roll_rad) + np.cross(k, v) * np.sin(roll_rad)        
-        print(f"K: {k} - V: {v} - Vrot: {vrot}")
-        return k, np.cross(k, vrot), vrot
-
-    def _parse_sensor_data(self, data):
+    def _parse_sensor_data(self, data_right, data_left) -> GestureDto.GestureDto:
         """Parses the sensor data received from the serial port."""
       
-        quat = list(map(float, data[0].split(',')))
-        flexors = list(map(float, data[1].split(',')))
-        calibration = list(map(float, data[2].split(',')))
+        euler_right, gyro_right, accel_right, flexors_right, calibration_right = [list(map(float, item.split(','))) for item in data_right]
+        euler_left, gyro_left, accel_left, flexors_left, calibration_left = [list(map(float, item.split(','))) for item in data_left]
         
-        r = R.from_quat([quat[1], quat[2], quat[3], quat[0]])
-        euler = r.as_euler('xyz', degrees=True)
+        return GestureDto(
+            id=None,
+            name=None,
+            left_hand=GestureDto.Hand(
+                roll=euler_left[0],
+                pitch=euler_left[1],
+                yaw=euler_left[2],
+                finger_flex = flexors_left,
+                gyro = gyro_left,
+                accel = accel_left,
+                calibration = calibration_left
+            ),
+            right_hand=GestureDto.Hand(
+                roll=euler_right[0],
+                pitch=euler_right[1],
+                yaw=euler_right[2],
+                finger_flex = flexors_right,
+                gyro = gyro_right,
+                accel = accel_right,
+                calibration = calibration_right
+            ))
 
-        return euler, flexors, calibration
-    
-    def _process_static_gesture(self, euler_izq, flexors_izq, euler_der, flexors_der):
+    def _process_static_gesture(self, gesture_dto):
         """Process a static gesture if recognized."""
 
-        static_gesture = self._gesture_service.recognise_gesture_by_values(euler_izq, flexors_izq, euler_der, flexors_der)
+        static_gesture = self._gesture_service.recognise_gesture(gesture_dto)
         if static_gesture:
             self._process_gesture(static_gesture)
         
 
-    def _process_dynamic_gesture(self, euler_izq, flexors_izq, euler_der, flexors_der):
+    def _process_dynamic_gesture(self, gesture_dto):
         """Process a dynamic gesture if recognized."""
         if len(self._potential_dynamic_gestures) == 5:
-            print("ada") 
-            dynamic_gesture = self._gesture_service.recognise_dynamic_gesture(self._potential_dynamic_gestures)
-            print("ada2")
+            dynamic_gesture = self._gesture_service.recognise_gesture(self._gesture_mapper.gesture_dto_to_gesture(self._potential_dynamic_gestures))
             if dynamic_gesture:
                 self._process_gesture(dynamic_gesture)
             self._potential_dynamic_gestures.clear()
         else:
-            self._potential_dynamic_gestures.append([[euler_izq, flexors_izq], [euler_der, flexors_der]])
+            self._potential_dynamic_gestures.append(gesture_dto)
 
     def run(self):
         """Main loop to read and process serial data."""
@@ -141,23 +143,19 @@ class ApiController:
             while not self._stop_event.is_set():
                 try:
                     if not self._serial_data_queue.empty():
-                        data_izq, data_der = self._serial_data_queue.get()
-                        #self._serial_data_queue.task_done()
-                        print(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")[:-3])
-                        euler_izq, flexors_izq, calibration_izq = self._parse_sensor_data(data_izq)
-                        euler_der, flexors_der, calibration_der = self._parse_sensor_data(data_der)
+                        data_left, data_right = self._serial_data_queue.get()
+                        self._serial_data_queue.task_done()
+                        gesture_dto = self._parse_sensor_data(data_right, data_left)
 
-                        print(f"Euler izq: {euler_izq} - Flexors izq: {flexors_izq} - Euler der: {euler_der} - Flexors der: {flexors_der}")
-
-                        
-                        #if self._is_calibration_needed(calibration_izq, calibration_der):
-                         #   print("Calibrating needed...")
-                            #self._calibration.calibrate()
-                          #  self._serial_data_queue.queue.clear()
+                        print(f"Left: {gesture_dto.left_hand.roll}, {gesture_dto.left_hand.pitch}, {gesture_dto.left_hand.yaw}, {gesture_dto.left_hand.finger_flex}")        
+                        if self._is_calibration_needed(gesture_dto.left_hand.calibration, gesture_dto.right_hand.calibration):
+                            print("Calibrating needed...")
+                            self._calibration.calibrate()
+                            self._serial_data_queue.queue.clear()
                             
-                        #else:
-                        self._process_static_gesture(euler_izq, flexors_izq, euler_der, flexors_der)
-                        self._process_dynamic_gesture(euler_izq, flexors_izq, euler_der, flexors_der)
+                        else:
+                            self._process_static_gesture(gesture_dto)
+                            self._process_dynamic_gesture(gesture_dto)
                             
                         with self._serial_data_queue.mutex: self._serial_data_queue.queue.clear()
             
