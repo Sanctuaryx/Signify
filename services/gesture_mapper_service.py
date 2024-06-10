@@ -44,8 +44,8 @@ class GestureMapperService:
         accel_axis = Gesture.MovementAxis(np.argmax(mean_accel))
         
         resultant_acceleration = np.linalg.norm(accels, axis=1)
-        mean_acceleration = np.mean(resultant_acceleration)
-        std_acceleration = np.std(resultant_acceleration)
+        mean_acceleration = np.mean(resultant_acceleration, dtype=np.float64)
+        std_acceleration = np.std(resultant_acceleration, dtype=np.float64)
 
         resultant_angular_velocity = np.linalg.norm(gyros, axis=1)
         mean_angular_velocity = np.mean(resultant_angular_velocity)
