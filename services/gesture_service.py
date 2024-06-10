@@ -87,12 +87,12 @@ class GestureService:
         within_bounds = np.all(nearest_point[general_indices] >= lower_threshold[general_indices]) and np.all(nearest_point[general_indices] <= upper_threshold[general_indices])
 
         within_movement_bounds = (
-            (((nearest_point[8] > upper_threshold[8]) and (nearest_point[9] < lower_threshold[9]) and (nearest_point[12] == points[12])) or
-            (nearest_point[10] > upper_threshold[10]) and (nearest_point[11] < lower_threshold[11]) and (nearest_point[13] == points[13])) 
+            (((points[8] > nearest_point[8]) and (points[9] < nearest_point[9]) and (points[12] == nearest_point[12])) or
+            (points[10] > nearest_point[10]) and (points[11] < nearest_point[11]) and (points[13] == nearest_point[13])) 
             or
-            ((((nearest_point[22] > upper_threshold[22]) and (nearest_point[23] < lower_threshold[23]) and (nearest_point[26] == points[26])) or
-            (nearest_point[24] > upper_threshold[24]) and (nearest_point[25] < lower_threshold[25]) and (nearest_point[27] == points[27]))
-            if len(nearest_point) >= 27 else False)
+            ((((points[22] > nearest_point[22]) and (points[23] < nearest_point[23]) and (points[26] == nearest_point[26])) or
+            (points[24] > nearest_point[24]) and (points[25] < nearest_point[25]) and (points[27] == nearest_point[27]))
+            if len(nearest_point) > 27 else False)
              
         )
         
