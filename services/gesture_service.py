@@ -79,12 +79,12 @@ class GestureService:
         nearest_point = gesture_tree[index]
         nearest_name = gesture_names[index]
         
-        lower_threshold = points * (1 - error_range)
-        upper_threshold = points * (1 + error_range)
-        
-        #eliminate from the general threshold the angular velocity and acceleration values
+        #eliminate from the general threshold the angular velocity and acceleration values, as well as the axis values
         general_indices = np.setdiff1d(np.arange(len(points)), [8,9,10,11,12,13, 22,23,24,25,26,27])
-        within_bounds = np.all(nearest_point[general_indices] >= lower_threshold[general_indices]) and np.all(nearest_point[general_indices] <= upper_threshold[general_indices])
+        lower_threshold = points[general_indices] * (1 - error_range)
+        upper_threshold = points[general_indices] * (1 + error_range)
+        
+        within_bounds = np.all(nearest_point[general_indices] >= lower_threshold) and np.all(nearest_point[general_indices] <= upper_threshold)
 
         within_movement_bounds = (
             (((points[8] > nearest_point[8]) and (points[9] < nearest_point[9]) and (points[12] == nearest_point[12])) or
