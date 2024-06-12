@@ -66,7 +66,7 @@ class ApiController:
         self._gesture_service = services.gesture_service.GestureService()
         self._gesture_mapper = services.gesture_mapper_service.GestureMapperService()
         
-        self._bno_controller = controllers.bno055_controller.SerialPortRearight('COM3', 'COM4', self._serial_data_queue, self._stop_event)
+        self._bno_controller = controllers.bno055_controller.SerialPortReader('COM3', 'COM4', self._serial_data_queue, self._stop_event)
         self._serial_data_thread = threading.Thread(target=self._bno_controller.start, daemon=True)
 
         
@@ -95,8 +95,7 @@ class ApiController:
       
         euler_right, gyro_right, accel_right, flexors_right, calibration_right = [list(map(float, item.split(','))) for item in data_right]
         euler_left, gyro_left, accel_left, flexors_left, calibration_left = [list(map(float, item.split(','))) for item in data_left]
-        
-        return GestureDto(
+        return GestureDto.GestureDto(
             id=None,
             name=None,
             left_hand=GestureDto.Hand(
@@ -146,7 +145,6 @@ class ApiController:
                         data_left, data_right = self._serial_data_queue.get()
                         self._serial_data_queue.task_done()
                         gesture_dto = self._parse_sensor_data(data_right, data_left)
-
                         print(f"Left: {gesture_dto.left_hand.roll}, {gesture_dto.left_hand.pitch}, {gesture_dto.left_hand.yaw}, {gesture_dto.left_hand.finger_flex}")        
                         if self._is_calibration_needed(gesture_dto.left_hand.calibration, gesture_dto.right_hand.calibration):
                             print("Calibrating needed...")
