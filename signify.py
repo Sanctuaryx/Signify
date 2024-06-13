@@ -92,29 +92,27 @@ class ApiController:
 
     def _parse_sensor_data(self, data_right, data_left) -> GestureDto.GestureDto:
         """Parses the sensor data received from the serial port."""
-      
-        euler_right, gyro_right, accel_right, flexors_right, calibration_right = [list(map(float, item.split(','))) for item in data_right]
-        euler_left, gyro_left, accel_left, flexors_left, calibration_left = [list(map(float, item.split(','))) for item in data_left]
+
         return GestureDto.GestureDto(
             id=None,
             name=None,
             left_hand=GestureDto.Hand(
-                roll=euler_left[0],
-                pitch=euler_left[1],
-                yaw=euler_left[2],
-                finger_flex = flexors_left,
-                gyro = gyro_left,
-                accel = accel_left,
-                calibration = calibration_left
+                roll=data_left[0][0],
+                pitch=data_left[0][1],
+                yaw=data_left[0][2],
+                finger_flex = list(map(int, data_left[3])),
+                gyro = data_left[1],
+                accel = data_left[2],
+                calibration = list(map(int, data_left[4]))
             ),
             right_hand=GestureDto.Hand(
-                roll=euler_right[0],
-                pitch=euler_right[1],
-                yaw=euler_right[2],
-                finger_flex = flexors_right,
-                gyro = gyro_right,
-                accel = accel_right,
-                calibration = calibration_right
+                roll=data_right[0][0],
+                pitch=data_right[0][1],
+                yaw=data_right[0][2],
+                finger_flex = list(map(int, data_right[3])),
+                gyro = data_right[1],
+                accel = data_right[2],
+                calibration = list(map(int, data_right[4]))
             ))
 
     def _process_static_gesture(self, gesture_dto):
@@ -143,9 +141,9 @@ class ApiController:
                 try:
                     if not self._serial_data_queue.empty():
                         data_left, data_right = self._serial_data_queue.get()
-                        self._serial_data_queue.task_done()
                         gesture_dto = self._parse_sensor_data(data_right, data_left)
-                        print(f"Left: {gesture_dto.left_hand.roll}, {gesture_dto.left_hand.pitch}, {gesture_dto.left_hand.yaw}, {gesture_dto.left_hand.finger_flex}")        
+                        print(vars(gesture_dto.left_hand), vars(gesture_dto.right_hand))
+                        
                         if self._is_calibration_needed(gesture_dto.left_hand.calibration, gesture_dto.right_hand.calibration):
                             print("Calibrating needed...")
                             self._calibration.calibrate()

@@ -5,6 +5,7 @@ import time
 from queue import Queue
 import psutil
 from threading import Event
+import numpy as np
 
 class SerialPortReader:
     def __init__(self, port_left: str, port_right: str, data_queue: Queue, stop_event: Event, baud_rate: int = 115200, timeout: float = 0.3):
@@ -27,6 +28,9 @@ class SerialPortReader:
         # Initialize serial port objects
         self.ser_left = None
         self.ser_right = None
+        self.__data_left = None
+        self.__data_right = None
+        self.__expected_lengths = [3, 3, 3, 5, 4]
         
         print('BNO055 controller initialized successfully.')
 
@@ -57,13 +61,10 @@ class SerialPortReader:
                 data_right = self.ser_right.readline().decode('utf-8').rstrip()
                     
                 # If data is available, put it in the queue
-                if data_left and data_right and self._data_queue.not_full:
-                    data_left = [part for part in data_left.strip('*').split('*') if part]
-                    data_right = [part for part in data_right.strip('*').split('*') if part]
-                    if len(data_left) == 5 and len(data_right) == 5:
-                        self._data_queue.put((data_left, data_right))
-                        self.ser_left.reset_input_buffer()
-                        self.ser_right.reset_input_buffer()
+                if self._data_queue.not_full and self.__low_pass_filter(data_left, data_right):
+                    self._data_queue.put((self.__data_left, self.__data_right))
+                    self.ser_left.reset_input_buffer()
+                    self.ser_right.reset_input_buffer()
                     
         except serial.SerialException as e:
             print(f"Error opening the serial port: {e}")
@@ -100,6 +101,38 @@ class SerialPortReader:
                 if conn.laddr.port == int(port.split('COM')[1]) or port in conn.laddr:
                     return True
         return False
+    
+    def __low_pass_filter(self, string_left: str, string_right: str):
+        def validate_and_parse(string: str):
+            segments = string.split('*')
+            
+            # Validate the number of segments
+            if len(segments) != len(self.__expected_lengths):
+                return None
+            
+            try:
+                # Split each segment by ',' and convert to float arrays
+                parsed_data = [
+                    np.fromstring(segment, sep=',', dtype=float)
+                    for segment in segments
+                ]
+                
+                # Validate the length of each segment
+                if any(len(elements) != expected_length 
+                    for elements, expected_length in zip(parsed_data, self.__expected_lengths)):
+                    return None
+            except ValueError:
+                return None
+            
+            return parsed_data
+        
+        self.__data_left = validate_and_parse(string_left)
+        self.__data_right = validate_and_parse(string_right)
+        
+        if self.__data_left is None or self.__data_right is None:
+            return False
+        
+        return True
 
     def __close_ports(self):
         """Close the serial ports if they are open."""

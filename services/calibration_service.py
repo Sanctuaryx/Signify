@@ -35,10 +35,8 @@ class BNO055Calibrator:
                 self._last_saved_calibration = [int(item) for item in data_izq[4].split(',')]
             else:
                 self._last_saved_calibration = [int(item) for item in data_der[4].split(',')]
-            
-            return self._last_saved_calibration
-        
-        except Exception:
+                    
+        except Exception as e:
             return self._last_saved_calibration
 
     def _perform_calibration_routine(self, sensor_name):
