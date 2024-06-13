@@ -3,7 +3,7 @@
 import serial
 import time
 from queue import Queue
-import threading
+import psutil
 from threading import Event
 
 class SerialPortReader:
@@ -40,13 +40,16 @@ class SerialPortReader:
             stop_event (Event): An event used to stop the serial reading.
         """
         try:
+            #make sure the ports are not in use
+            if self.__is_port_in_use(self.port_left) or self.__is_port_in_use(self.port_right):
+                self.__reset_arduino()
+                
             # Open the serial ports
             self.ser_left = serial.Serial(self.port_left, self.baud_rate, timeout=self.timeout)
             self.ser_right = serial.Serial(self.port_right, self.baud_rate, timeout=self.timeout)
-
             print(f"Serial ports {self.port_left} and {self.port_right} opened successfully.")
             # Allow some time for ports to initialize
-            time.sleep(2)
+            time.sleep(4)
 
             while not self._stop_event.is_set():
                 # Read and decode data from both ports
@@ -71,9 +74,34 @@ class SerialPortReader:
         except Exception as e:
             self._data_queue.get()  # Remove the invalid data
         finally:
-            self._close_ports()
+            self.__close_ports()
+            
+    def __reset_arduino(self):
+        """
+        Reset the Arduino by toggling the DTR (Data Terminal Ready) line.
+        
+        :param ser: The serial connection object.
+        """
+        self.ser_left.close()
+        self.ser_right.close()
+        time.sleep(1)
+        self.ser_left.open()
+        self.ser_right.open()
+                    
+    def __is_port_in_use(self, port):
+        """
+        Check if a given serial port is currently in use by any process.
+        
+        :param port: The serial port to check (e.g., 'COM3', '/dev/ttyUSB0').
+        :return: Boolean indicating whether the port is in use.
+        """
+        for proc in psutil.process_iter(['pid', 'name', 'connections']):
+            for conn in proc.info['connections']:
+                if conn.laddr.port == int(port.split('COM')[1]) or port in conn.laddr:
+                    return True
+        return False
 
-    def _close_ports(self):
+    def __close_ports(self):
         """Close the serial ports if they are open."""
         if self.ser_left and self.ser_left.is_open:
             self.ser_left.close()
@@ -82,7 +110,4 @@ class SerialPortReader:
             
     def stop(self):
         self._stop_event.set()
-
-    def stopped(self):
-        return self._stop_event.is_set()
 
