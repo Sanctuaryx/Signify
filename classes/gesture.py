@@ -1,9 +1,9 @@
 from enum import Enum
 
 class MovementAxis(Enum):
-    X = 0
-    Y = 1
-    Z = 2
+    X = 1
+    Y = 2
+    Z = 3
     
 class Hand:
     def __init__(self, roll, pitch, yaw, finger_flex, gyro_axis: MovementAxis = None, accel_axis: MovementAxis = None, mean_acceleration = None, std_acceleration = None, mean_angular_velocity = None, std_angular_velocity = None):

@@ -28,16 +28,12 @@ def create_tables(cursor):
         finger3 INTEGER,
         finger4 INTEGER,
         finger5 INTEGER,
-        gyro1 REAL,
-        gyro2 REAL,
-        gyro3 REAL,
-        accel1 REAL,
-        accel2 REAL,
-        accel3 REAL,
-        calib1 INTEGER,
-        calib2 INTEGER,
-        calib3 INTEGER,
-        calib4 INTEGER
+        mean_acceleration REAL,
+        td_acceleration REAL,
+        mean_angular_velocity REAL,
+        std_angular_velocity REAL,
+        gyro_axis INTEGER,
+        accel_axis INTEGER,
     )
     ''')
     
@@ -55,15 +51,15 @@ def create_tables(cursor):
 def setup_data():
     return [
         {
-            "name": "gesture_1",
-            "left_hand": (2.0, 2.0, 2.0, 2, 2, 2, 2, 2, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 1, 1, 1, 1),
-            "right_hand": (2.0, 2.0, 2.0, 2, 2, 2, 2, 2, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 1, 1, 1, 1)
+            "name": "gesture_1_STATIC",
+            "left_hand": (2.0, 2.0, 2.0, 2, 2, 2, 2, 2, 0.0, 0.0, 0.0, 0.0, 0, 0),
+            "right_hand": (2.0, 2.0, 2.0, 2, 2, 2, 2, 2, 0.0, 0.0, 0.0, 0.0, 0, 0)
         },
         
         {
-            "name": "gesture_100",
-            "left_hand": (3.0, 3.0, 3.0, 3, 3, 3, 3, 3, 3.0, 3.0, 3.0, 3.0, 3.0, 3.0, 2, 2, 2, 2),
-            "right_hand": (3.0, 3.0, 3.0, 3, 3, 3, 3, 3, 3.0, 3.0, 3.0, 3.0, 3.0, 3.0, 2, 2, 2, 2)
+            "name": "gesture_100_DYNAMIC",
+            "left_hand": (3.0, 3.0, 3.0, 3, 3, 3, 3, 3, 3.0, 3.0, 3.0, 3.0, 2, 2),
+            "right_hand": (3.0, 3.0, 3.0, 3, 3, 3, 3, 3, 0.0, 0.0, 0.0, 0.0, 0, 0)
         }
     ]
 

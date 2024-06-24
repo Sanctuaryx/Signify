@@ -79,12 +79,12 @@ class GestureRepository:
             pitch=hand_data[1],
             yaw=hand_data[2],
             finger_flex=list(map(int, hand_data[3:8])),
-            mean_acceleration=hand_data[8] if hand_data[8] != '' else None,
-            std_acceleration=hand_data[9] if hand_data[9] != '' else None,
-            mean_angular_velocity=hand_data[10] if hand_data[10] != '' else None,
-            std_angular_velocity=hand_data[11] if hand_data[11] != '' else None,
-            gyro_axis = int(hand_data[12]) if hand_data[12] != '' else None,
-            accel_axis = int(hand_data[13]) if hand_data[13] != '' else None
+            mean_acceleration=hand_data[8],
+            std_acceleration=hand_data[9],
+            mean_angular_velocity=hand_data[10],
+            std_angular_velocity=hand_data[11],
+            gyro_axis = int(hand_data[12]),
+            accel_axis = int(hand_data[13])
             )
             
     def get_gestures(self):
