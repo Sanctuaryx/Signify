@@ -1,25 +1,73 @@
 import sqlite3
 import os
 
-# Function to insert data into dynamic_gestures table
-def insert_gesture(cursor, name, left_hand, right_hand):
+# Function to insert data into hands table
+def insert_hand(cursor, roll, pitch, yaw, finger1, finger2, finger3, finger4, finger5, gyro1, gyro2, gyro3, accel1, accel2, accel3, calib1, calib2, calib3, calib4):
     cursor.execute('''
-    INSERT INTO gestures (name, left_hand, right_hand)
+    INSERT INTO hands (roll, pitch, yaw, finger1, finger2, finger3, finger4, finger5, gyro1, gyro2, gyro3, accel1, accel2, accel3, calib1, calib2, calib3, calib4)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ''', (roll, pitch, yaw, finger1, finger2, finger3, finger4, finger5, gyro1, gyro2, gyro3, accel1, accel2, accel3, calib1, calib2, calib3, calib4))
+    return cursor.lastrowid
+
+# Function to insert data into gestures table
+def insert_gesture(cursor, name, left_hand_id, right_hand_id):
+    cursor.execute('''
+    INSERT INTO gestures (name, left_hand_id, right_hand_id)
     VALUES (?, ?, ?)
-    ''', (name, left_hand, right_hand))
+    ''', (name, left_hand_id, right_hand_id))
 
 def create_tables(cursor):
+    cursor.execute('''
+    CREATE TABLE IF NOT EXISTS hands (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        roll REAL,
+        pitch REAL,
+        yaw REAL,
+        finger1 INTEGER,
+        finger2 INTEGER,
+        finger3 INTEGER,
+        finger4 INTEGER,
+        finger5 INTEGER,
+        gyro1 REAL,
+        gyro2 REAL,
+        gyro3 REAL,
+        accel1 REAL,
+        accel2 REAL,
+        accel3 REAL,
+        calib1 INTEGER,
+        calib2 INTEGER,
+        calib3 INTEGER,
+        calib4 INTEGER
+    )
+    ''')
+    
     cursor.execute('''
     CREATE TABLE IF NOT EXISTS gestures (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         name TEXT NOT NULL,
-        left_hand TEXT,
-        right_hand TEXT
+        left_hand_id INTEGER,
+        right_hand_id INTEGER,
+        FOREIGN KEY (left_hand_id) REFERENCES hands(id),
+        FOREIGN KEY (right_hand_id) REFERENCES hands(id)
     )
     ''')
     
+def setup_data():
+    return [
+        {
+            "name": "gesture_1",
+            "left_hand": (2.0, 2.0, 2.0, 2, 2, 2, 2, 2, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 1, 1, 1, 1),
+            "right_hand": (2.0, 2.0, 2.0, 2, 2, 2, 2, 2, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 1, 1, 1, 1)
+        },
+        
+        {
+            "name": "gesture_100",
+            "left_hand": (3.0, 3.0, 3.0, 3, 3, 3, 3, 3, 3.0, 3.0, 3.0, 3.0, 3.0, 3.0, 2, 2, 2, 2),
+            "right_hand": (3.0, 3.0, 3.0, 3, 3, 3, 3, 3, 3.0, 3.0, 3.0, 3.0, 3.0, 3.0, 2, 2, 2, 2)
+        }
+    ]
+
 def setup_database():
-               
     # Specify the directory where you want to store the database file
     database_dir = 'resources/SQL/int_dataBase'
     database_file = 'gestures.db'
@@ -30,19 +78,22 @@ def setup_database():
     cursor = conn.cursor()
 
     create_tables(cursor)
+    data = setup_data()
     
-    insert_gesture(cursor, 'a', '2.0, 2.0, 2.0, 2, 2, 2, 2, 2, 2.0, 2.0, 2.0, 2.0, 1,,', '2.0, 2.0, 2.0, 2, 2, 2, 2, 2, 2.0, 2.0, 2.0, 2.0, 1,,')
-
-    cursor.execute("SELECT * FROM gestures")
-    gestures_data = cursor.fetchall()
-    print(gestures_data)
-            
+    for row in data:
+        name = row["name"]
+        left_hand_data = row["left_hand"]
+        right_hand_data = row["right_hand"]
+        
+        left_hand_id = insert_hand(cursor, *left_hand_data)
+        right_hand_id = insert_hand(cursor, *right_hand_data)
+        
+        insert_gesture(cursor, name, left_hand_id, right_hand_id)
+    
     conn.commit()
     conn.close()
 
     print(f"Database and tables created successfully at {database_path}.")
-    
-    
+
 if __name__ == '__main__':
     setup_database()
- 
