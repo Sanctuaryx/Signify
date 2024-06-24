@@ -69,7 +69,7 @@ def setup_data():
 
 def setup_database():
     # Specify the directory where you want to store the database file
-    database_dir = 'resources/SQL/int_dataBase'
+    database_dir = '../../resources/SQL/int_dataBase'
     database_file = 'gestures.db'
     database_path = os.path.join(database_dir, database_file)
     
