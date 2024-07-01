@@ -36,13 +36,18 @@ script_dir = os.path.dirname("services/file_management_service.py")
 # Add the parent directory to sys.path
 sys.path.append(os.path.join(script_dir, '..'))
 
+# Get the directory where the script lives
+script_dir = os.path.dirname("classes/GestureFactory.py")
+# Add the parent directory to sys.path
+sys.path.append(os.path.join(script_dir, '..'))
+
 import controllers.bno055_controller
 import services.calibration_service
 import services.text_to_speech_service
 import services.file_management_service
 import services.gesture_service
-import classes.gesture as Gesture
-import classes.gesture_dto as GestureDto
+import classes.DynamicGesture as DynamicGesture
+import classes.StaticGesture as StaticGesture
 import services.gesture_mapper_service
 
 from scipy.spatial.transform import Rotation as R

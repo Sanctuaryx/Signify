@@ -1,4 +1,5 @@
 from enum import Enum
+import BaseGesture
 
 class MovementAxis(Enum):
     X = 1
@@ -82,28 +83,11 @@ class Hand:
     def set_std_angular_velocity(self, std_angular_velocity):
         self._std_angular_velocity = std_angular_velocity
     
-class Gesture:
+class DynamicGesture(BaseGesture.BaseGesture):
     def __init__(self, id, name, left_hand : Hand, right_hand : Hand):
-        self._id = id
-        self._name = name
+        super().__init__(id, name)
         self._left_hand = left_hand
         self._right_hand = right_hand
-      
-    @property  
-    def id(self):
-        return self._id
-    
-    @id.setter
-    def set_id(self, id):
-        self._id = id
-    
-    @property
-    def name(self):
-        return self._name
-    
-    @name.setter
-    def set_name(self, name):
-        self._name = name
     
     @property
     def left_hand(self):
