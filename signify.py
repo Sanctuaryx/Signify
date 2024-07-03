@@ -17,12 +17,17 @@ script_dir = os.path.dirname("services/text_to_speech_service.py")
 sys.path.append(os.path.join(script_dir, '..'))
 
 # Get the directory where the script lives
-script_dir = os.path.dirname("classes/gesture.py")
+script_dir = os.path.dirname("classes/BaseGesture.py")
 # Add the parent directory to sys.path
 sys.path.append(os.path.join(script_dir, '..'))
 
 # Get the directory where the script lives
-script_dir = os.path.dirname("classes/gesture_dto.py")
+script_dir = os.path.dirname("classes/DynamicGesture_dto.py")
+# Add the parent directory to sys.path
+sys.path.append(os.path.join(script_dir, '..'))
+
+# Get the directory where the script lives
+script_dir = os.path.dirname("classes/StaticGesture_dto.py")
 # Add the parent directory to sys.path
 sys.path.append(os.path.join(script_dir, '..'))
 
@@ -41,6 +46,11 @@ script_dir = os.path.dirname("classes/GestureFactory.py")
 # Add the parent directory to sys.path
 sys.path.append(os.path.join(script_dir, '..'))
 
+# Get the directory where the script lives
+script_dir = os.path.dirname("classes/AbstractGestureFactory.py")
+# Add the parent directory to sys.path
+sys.path.append(os.path.join(script_dir, '..'))
+
 import controllers.bno055_controller
 import services.calibration_service
 import services.text_to_speech_service
@@ -49,6 +59,7 @@ import services.gesture_service
 import classes.DynamicGesture as DynamicGesture
 import classes.StaticGesture as StaticGesture
 import services.gesture_mapper_service
+import classes.GestureFactory as GestureFactory
 
 from scipy.spatial.transform import Rotation as R
 import time
@@ -70,6 +81,7 @@ class ApiController:
         self._file_controller = services.file_management_service.SpeechFileManager()
         self._gesture_service = services.gesture_service.GestureService()
         self._gesture_mapper = services.gesture_mapper_service.GestureMapperService()
+        self.__factory = GestureFactory.GestureFactory()
         
         self._bno_controller = controllers.bno055_controller.SerialPortReader('COM3', 'COM4', self._serial_data_queue, self._stop_event)
         self._serial_data_thread = threading.Thread(target=self._bno_controller.start, daemon=True)
@@ -95,13 +107,10 @@ class ApiController:
         self._last_gesture_time = time.time()
         self._file_controller.play_speech_file()
 
-    def _parse_sensor_data(self, data_right, data_left) -> GestureDto.GestureDto:
+    def _parse_sensor_data(self, data_right, data_left) -> StaticGesture.StaticGesture:
         """Parses the sensor data received from the serial port."""
 
-        return GestureDto.GestureDto(
-            id=None,
-            name=None,
-            left_hand=GestureDto.Hand(
+        left_hand=StaticGesture.Hand(
                 roll=data_left[0][0],
                 pitch=data_left[0][1],
                 yaw=data_left[0][2],
@@ -109,8 +118,8 @@ class ApiController:
                 gyro = data_left[1],
                 accel = data_left[2],
                 calibration = list(map(int, data_left[4]))
-            ),
-            right_hand=GestureDto.Hand(
+            )
+        right_hand=StaticGesture.Hand(
                 roll=data_right[0][0],
                 pitch=data_right[0][1],
                 yaw=data_right[0][2],
@@ -118,7 +127,8 @@ class ApiController:
                 gyro = data_right[1],
                 accel = data_right[2],
                 calibration = list(map(int, data_right[4]))
-            ))
+            )
+        return self.__factory.create_static_gesture(left_hand, right_hand)
 
     def _process_static_gesture(self, gesture_dto):
         """Process a static gesture if recognized."""

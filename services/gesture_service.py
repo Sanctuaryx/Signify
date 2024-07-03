@@ -6,13 +6,30 @@ script_dir = os.path.dirname("repositories/gesture_repository.py")
 sys.path.append(os.path.join(script_dir, '..'))
 
 # Get the directory where the script lives
-script_dir = os.path.dirname("classes/gesture.py")
+script_dir = os.path.dirname("classes/DynamicGesture.py")
+# Add the parent directory to sys.path
+sys.path.append(os.path.join(script_dir, '..'))
+
+# Get the directory where the script lives
+script_dir = os.path.dirname("classes/StaticGesture.py")
+# Add the parent directory to sys.path
+sys.path.append(os.path.join(script_dir, '..'))
+
+# Get the directory where the script lives
+script_dir = os.path.dirname("classes/GestureFactory.py")
+# Add the parent directory to sys.path
+sys.path.append(os.path.join(script_dir, '..'))
+
+# Get the directory where the script lives
+script_dir = os.path.dirname("classes/AbstractGestureFactory.py")
 # Add the parent directory to sys.path
 sys.path.append(os.path.join(script_dir, '..'))
 
 import repositories.gesture_repository
-import classes.gesture as Gesture
-import classes.gesture_dto as GestureDto
+import classes.DynamicGesture as DynamicGesture
+import classes.StaticGesture as StaticGesture
+import classes.GestureFactory as GestureFactory
+import classes.AbstractGestureFactory as AbstractGestureFactory
 
 import numpy as np
 
@@ -20,13 +37,14 @@ class GestureService:
     def __init__(self):
         self.gesture_repository = repositories.gesture_repository.GestureRepository()
         
-    def _extract_hand_features(self, hand: GestureDto.Hand):
+    def _extract_hand_features(self, hand: StaticGesture.Hand):
         return np.array([
             hand.roll, hand.pitch, hand.yaw,
-            *hand.finger_flex,
+            *hand.finger_flex, 
+            0.0, 0.0, 0.0, 0.0, 0, 0
         ])
             
-    def _extract_hand_features(self, hand: Gesture.Hand):
+    def _extract_hand_features(self, hand: DynamicGesture.Hand):
         return np.array([
             hand.roll, hand.pitch, hand.yaw,
             *hand.finger_flex,
@@ -34,12 +52,12 @@ class GestureService:
             hand.accel_axis, hand.gyro_axis
         ])
     
-    def recognise_gesture(self, gesture: GestureDto.GestureDto, error_range=0.1): 
+    def recognise_gesture(self, gesture: StaticGesture.StaticGesture, error_range=0.1): 
         """
         Recognizes a gesture by comparing it with a set of predefined gestures.
 
         Args:
-            gesture (GestureDto.GestureDto): The gesture to be recognized.
+            gesture (StaticGesture.StaticGesture): The gesture to be recognized.
             error_range (float, optional): The allowed error range for matching the gesture. Defaults to 0.1.
 
         Returns:
@@ -65,7 +83,7 @@ class GestureService:
         else:
             return None
                 
-    def recognise_gesture(self, gesture: Gesture.Gesture, error_range=0.1): 
+    def recognise_gesture(self, gesture: DynamicGesture.DynamicGesture, error_range=0.1): 
         
         gesture_tree, gesture_names = self.gesture_repository.get_gestures()
         

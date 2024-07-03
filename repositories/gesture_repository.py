@@ -1,7 +1,9 @@
 import sqlite3
 import numpy as np
 from scipy.spatial import KDTree
-import classes.gesture as Gesture
+import classes.DynamicGesture as DynamicGesture
+import classes.StaticGesture as StaticGesture
+import classes.GestureFactory as GestureFactory
 class GestureRepository:
     """
     A class that represents a repository for storing and retrieving gesture data.
@@ -19,9 +21,10 @@ class GestureRepository:
             db_static_path (str, optional): The path to the static gestures database file. Defaults to 'resources/SQL/int_dataBase/staticGestures.db'.
             db_dynamic_path (str, optional): The path to the dynamic gestures database file. Defaults to 'resources/SQL/int_dataBase/dynamicGestures.db'.
         """
+        self.__factory = GestureFactory.GestureFactory()
         self._db_path = db_path
-        self.gesture_tree, self.gesture_names = self._get_all_gestures()
-        print('Gesture repository initialized successfully.')
+        self.__gesture_tree, self.__gesture_names = self._get_all_gestures()
+        print('DynamicGesture repository initialized successfully.')
 
     def _get_all_gestures(self):
         """
@@ -58,15 +61,37 @@ class GestureRepository:
             conn = sqlite3.connect(self._db_path)
             cursor = conn.cursor()
 
-            cursor.execute("SELECT * FROM gestures")
+            cursor.execute("SELECT * FROM gestures g LEFT JOIN hands lh ON g.left_hand_id = lh.id LEFT JOIN hands rh ON g.right_hand_id = rh.id")
             gestures_data = cursor.fetchall()
             conn.close()
                         
-            return [Gesture(
+            return [self.__factory.create_dynamic_gesture(
                 id=row[0],
                 name=row[1],
-                left_hand=self._parse_hand_data(row[2]) if row[2] != '' else None,
-                right_hand=self._parse_hand_data(row[3]) if row[3] != '' else None
+                left_hand=DynamicGesture.Hand(
+                    roll=row[3],
+                    pitch=row[4],
+                    yaw=row[5],
+                    finger_flex=list(map(int, row[6:11])),
+                    mean_acceleration=row[11],
+                    std_acceleration=row[12],
+                    mean_angular_velocity=row[13],
+                    std_angular_velocity=row[14],
+                    gyro_axis = int(row[15]),
+                    accel_axis = int(row[16])
+                    ),
+                right_hand=DynamicGesture.Hand(
+                    roll=row[17],
+                    pitch=row[18],
+                    yaw=row[19],
+                    finger_flex=list(map(int, row[20:25])),
+                    mean_acceleration=row[25],
+                    std_acceleration=row[26],
+                    mean_angular_velocity=row[27],
+                    std_angular_velocity=row[28],
+                    gyro_axis = int(row[29]),
+                    accel_axis = int(row[30])
+                    )
             ) for row in gestures_data]
             
         except Exception as e:
@@ -74,7 +99,7 @@ class GestureRepository:
         
     def _parse_hand_data(self, hand_data_str):
         hand_data = list(map(float, hand_data_str.split(',')))
-        return Gesture.Hand(
+        return DynamicGesture.Hand(
             roll=hand_data[0],
             pitch=hand_data[1],
             yaw=hand_data[2],
@@ -94,4 +119,4 @@ class GestureRepository:
         Returns:
             list: A list of tuples representing the static gestures data.
         """
-        return self.gesture_tree, self.gesture_names
+        return self.__gesture_tree, self.__gesture_names

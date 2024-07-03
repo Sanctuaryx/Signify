@@ -2,11 +2,11 @@ import sqlite3
 import os
 
 # Function to insert data into hands table
-def insert_hand(cursor, roll, pitch, yaw, finger1, finger2, finger3, finger4, finger5, gyro1, gyro2, gyro3, accel1, accel2, accel3, calib1, calib2, calib3, calib4):
+def insert_hand(cursor, roll, pitch, yaw, finger1, finger2, finger3, finger4, finger5, mean_acceleration, std_acceleration, mean_angular_velocity, std_angular_velocity, gyro_axis, accel_axis):
     cursor.execute('''
-    INSERT INTO hands (roll, pitch, yaw, finger1, finger2, finger3, finger4, finger5, gyro1, gyro2, gyro3, accel1, accel2, accel3, calib1, calib2, calib3, calib4)
+    INSERT INTO hands (roll, pitch, yaw, finger1, finger2, finger3, finger4, finger5, mean_acceleration, std_acceleration, mean_angular_velocity, std_angular_velocity, gyro_axis, accel_axis)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    ''', (roll, pitch, yaw, finger1, finger2, finger3, finger4, finger5, gyro1, gyro2, gyro3, accel1, accel2, accel3, calib1, calib2, calib3, calib4))
+    ''', (roll, pitch, yaw, finger1, finger2, finger3, finger4, finger5, mean_acceleration, std_acceleration, mean_angular_velocity, std_angular_velocity, gyro_axis, accel_axis))
     return cursor.lastrowid
 
 # Function to insert data into gestures table
@@ -29,7 +29,7 @@ def create_tables(cursor):
         finger4 INTEGER,
         finger5 INTEGER,
         mean_acceleration REAL,
-        td_acceleration REAL,
+        std_acceleration REAL,
         mean_angular_velocity REAL,
         std_angular_velocity REAL,
         gyro_axis INTEGER,
