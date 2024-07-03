@@ -1,3 +1,5 @@
+import BaseGesture
+
 class Hand:
     def __init__(self, roll, pitch, yaw, gyro, accel, finger_flex, calibration):
         self._roll = roll
@@ -64,28 +66,11 @@ class Hand:
     def calibration(self, calibration):
         self._calibration = calibration
 
-class GestureDto:
-    def __init__(self, id, name, left_hand : Hand, right_hand : Hand):
-        self._id = id
-        self._name = name
+class StaticGesture(BaseGesture.BaseGesture):
+    def __init__(self, left_hand : Hand, right_hand : Hand, id = None, name = None):
+        super().__init__(id, name)
         self._left_hand = left_hand
         self._right_hand = right_hand
-    
-    @property
-    def id(self):
-        return self._id
-    
-    @id.setter
-    def id(self, id):
-        self._id = id
-    
-    @property
-    def name(self):
-        return self._name
-    
-    @name.setter
-    def name(self, name):
-        self._name = name
     
     @property
     def left_hand(self):

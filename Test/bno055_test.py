@@ -36,7 +36,7 @@ script_dir = os.path.dirname("services/file_management_service.py")
 sys.path.append(os.path.join(script_dir, '..'))
 
 from signify import ApiController
-from classes.gesture import recognize_letter
+from classes.DynamicGesture import recognize_letter
 from services.text_to_speech_service import TTSConverter
 from services.file_management_service import SpeechFileManager
 class TestGestureRecognition:

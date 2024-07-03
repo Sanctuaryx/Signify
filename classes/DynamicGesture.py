@@ -84,7 +84,7 @@ class Hand:
         self._std_angular_velocity = std_angular_velocity
     
 class DynamicGesture(BaseGesture.BaseGesture):
-    def __init__(self, id, name, left_hand : Hand, right_hand : Hand):
+    def __init__(self, left_hand : Hand, right_hand : Hand, id = None, name = None):
         super().__init__(id, name)
         self._left_hand = left_hand
         self._right_hand = right_hand

@@ -96,21 +96,6 @@ class GestureRepository:
             
         except Exception as e:
             return None   
-        
-    def _parse_hand_data(self, hand_data_str):
-        hand_data = list(map(float, hand_data_str.split(',')))
-        return DynamicGesture.Hand(
-            roll=hand_data[0],
-            pitch=hand_data[1],
-            yaw=hand_data[2],
-            finger_flex=list(map(int, hand_data[3:8])),
-            mean_acceleration=hand_data[8],
-            std_acceleration=hand_data[9],
-            mean_angular_velocity=hand_data[10],
-            std_angular_velocity=hand_data[11],
-            gyro_axis = int(hand_data[12]),
-            accel_axis = int(hand_data[13])
-            )
             
     def get_gestures(self):
         """

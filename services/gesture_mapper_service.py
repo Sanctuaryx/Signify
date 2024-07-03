@@ -1,5 +1,5 @@
-import classes.gesture as Gesture
-import classes.gesture_dto as GestureDto
+import classes.DynamicGesture as Gesture
+import classes.StaticGesture as GestureDto
 from typing import List
 import numpy as np
 
@@ -48,8 +48,8 @@ class GestureMapperService:
         std_acceleration = np.std(resultant_acceleration, dtype=np.float64)
 
         resultant_angular_velocity = np.linalg.norm(gyros, axis=1)
-        mean_angular_velocity = np.mean(resultant_angular_velocity)
-        std_angular_velocity = np.std(resultant_angular_velocity)
+        mean_angular_velocity = np.mean(resultant_angular_velocity, dtype=np.float64)
+        std_angular_velocity = np.std(resultant_angular_velocity, dtype=np.float64)
         
         return Gesture.Hand(
             roll=np.mean(rolls),
