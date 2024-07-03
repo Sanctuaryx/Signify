@@ -64,6 +64,7 @@ import classes.GestureFactory as GestureFactory
 from scipy.spatial.transform import Rotation as R
 import time
 import threading
+import queue
 from queue import Queue
 
 class ApiController:
@@ -154,22 +155,22 @@ class ApiController:
             self._read_serial_ports()
             while not self._stop_event.is_set():
                 try:
-                    data_left, data_right = self._serial_data_queue.get(False)
-                    static_gesture = self._parse_sensor_data(data_left, data_right)
-                    print(vars(static_gesture.left_hand), vars(static_gesture.right_hand))
-                    
-                    if self._is_calibration_needed(static_gesture.left_hand.calibration, static_gesture.right_hand.calibration):
-                        print("Calibrating needed...")
-                        self._calibration.calibrate()
+                    if not self._serial_data_queue.empty():
+                        data_left, data_right = self._serial_data_queue.get()
+                        static_gesture = self._parse_sensor_data(data_left, data_right)
                         
-                    else:
-                        self._process_static_gesture(static_gesture)
-                        self._process_dynamic_gesture(static_gesture)
-                        
-                    with self._serial_data_queue.mutex: self._serial_data_queue.queue.clear()
-        
-                except Queue.empty:
-                    pass
+                        if self._is_calibration_needed(static_gesture.left_hand.calibration, static_gesture.right_hand.calibration):
+                            print("Calibration needed...")
+                            self._calibration.calibrate()
+                            
+                        else:
+                            self._process_static_gesture(static_gesture)
+                            self._process_dynamic_gesture(static_gesture)
+                            
+                        with self._serial_data_queue.mutex: self._serial_data_queue.queue.clear()
+            
+                except Exception as e:
+                    print (f"Error processing gesture: {e}")
                     
         except Exception as e:
             self._serial_data_queue.get()  # Remove the invalid data 

@@ -15,7 +15,7 @@ class BNO055Calibrator:
         """
         self.__data_queue = serial_data_queue
         self._stop_event = stop_event
-        self._last_saved_calibration = None
+        self._last_saved_calibration = [0,0,0,0]
         
         print('Calibrator initialized successfully.')
 
@@ -27,18 +27,20 @@ class BNO055Calibrator:
         :param data_source: Index (0 for left, 1 for right) to specify sensor.
         :return: List of calibration values as floats.
         """
-        try:
-            with self.__data_queue.mutex: self.__data_queue.queue.clear()
-            time.sleep(1)
-            
-            data_izq, data_der = self.__data_queue.get()
-            if data_source == 0 or data_source == "left":
-                self._last_saved_calibration = list(map(int, data_izq[4]))
-            else:
-                self._last_saved_calibration = list(map(int, data_der[4]))
-                    
-        except Queue.empty:
-            return self._last_saved_calibration
+        if not self.__data_queue.empty():
+            try:
+                with self.__data_queue.mutex: self.__data_queue.queue.clear()
+                time.sleep(1)
+                
+                data_izq, data_der = self.__data_queue.get()
+                if data_source == 0 or data_source == "left":
+                    self._last_saved_calibration = list(map(int, data_izq[4]))
+                else:
+                    self._last_saved_calibration = list(map(int, data_der[4]))
+                        
+            except Exception:
+                return self._last_saved_calibration
+        return self._last_saved_calibration
 
     def _perform_calibration_routine(self, sensor_name):
         """
@@ -46,7 +48,6 @@ class BNO055Calibrator:
 
         :param sensor_name: Name of the sensor (left or right) for user instructions.
         """
-        print("\n\n11")
         self.accel, self.gyro, self.mag, self.sys = self._get_calibration_data(sensor_name)
         print("Calibrating " + sensor_name + " BNO055 sensor...")
      
