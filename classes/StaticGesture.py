@@ -1,4 +1,4 @@
-import BaseGesture
+import classes.BaseGesture as BaseGesture
 
 class Hand:
     def __init__(self, roll, pitch, yaw, gyro, accel, finger_flex, calibration):

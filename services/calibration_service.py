@@ -2,17 +2,18 @@
 
 import time
 import sys
+from queue import Queue
 
 class BNO055Calibrator:
     """Class for calibrating BNO055 sensors."""
 
-    def __init__(self, serial_data_queue, stop_event):
+    def __init__(self, serial_data_queue: Queue, stop_event):
         """
         Initialize the calibrator with a reference to an existing data queue.
         
         :param serial_data_queue: A queue object that provides sensor data.
         """
-        self._serial_data_queue = serial_data_queue
+        self.__data_queue = serial_data_queue
         self._stop_event = stop_event
         self._last_saved_calibration = None
         
@@ -27,16 +28,16 @@ class BNO055Calibrator:
         :return: List of calibration values as floats.
         """
         try:
-            with self._serial_data_queue.mutex: self._serial_data_queue.queue.clear()
+            with self.__data_queue.mutex: self.__data_queue.queue.clear()
             time.sleep(1)
             
-            data_izq, data_der = self._serial_data_queue.get()
+            data_izq, data_der = self.__data_queue.get()
             if data_source == 0 or data_source == "left":
-                self._last_saved_calibration = [int(item) for item in data_izq[4].split(',')]
+                self._last_saved_calibration = list(map(int, data_izq[4]))
             else:
-                self._last_saved_calibration = [int(item) for item in data_der[4].split(',')]
+                self._last_saved_calibration = list(map(int, data_der[4]))
                     
-        except Exception as e:
+        except Queue.empty:
             return self._last_saved_calibration
 
     def _perform_calibration_routine(self, sensor_name):
@@ -45,6 +46,7 @@ class BNO055Calibrator:
 
         :param sensor_name: Name of the sensor (left or right) for user instructions.
         """
+        print("\n\n11")
         self.accel, self.gyro, self.mag, self.sys = self._get_calibration_data(sensor_name)
         print("Calibrating " + sensor_name + " BNO055 sensor...")
      

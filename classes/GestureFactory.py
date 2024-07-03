@@ -1,7 +1,7 @@
-import BaseGesture
-import AbstractGestureFactory
-import StaticGesture
-import DynamicGesture
+import classes.BaseGesture as BaseGesture
+from classes.AbstractGestureFactory import AbstractGestureFactory
+import classes.StaticGesture as StaticGesture
+import classes.DynamicGesture as DynamicGesture
 
 class GestureFactory(AbstractGestureFactory):
     

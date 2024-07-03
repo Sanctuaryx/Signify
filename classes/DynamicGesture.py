@@ -1,5 +1,5 @@
 from enum import Enum
-import BaseGesture
+import classes.BaseGesture as BaseGesture
 
 class MovementAxis(Enum):
     X = 1

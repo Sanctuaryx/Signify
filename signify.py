@@ -22,12 +22,12 @@ script_dir = os.path.dirname("classes/BaseGesture.py")
 sys.path.append(os.path.join(script_dir, '..'))
 
 # Get the directory where the script lives
-script_dir = os.path.dirname("classes/DynamicGesture_dto.py")
+script_dir = os.path.dirname("classes/Dynamicstatic_gesture.py")
 # Add the parent directory to sys.path
 sys.path.append(os.path.join(script_dir, '..'))
 
 # Get the directory where the script lives
-script_dir = os.path.dirname("classes/StaticGesture_dto.py")
+script_dir = os.path.dirname("classes/Staticstatic_gesture.py")
 # Add the parent directory to sys.path
 sys.path.append(os.path.join(script_dir, '..'))
 
@@ -107,7 +107,7 @@ class ApiController:
         self._last_gesture_time = time.time()
         self._file_controller.play_speech_file()
 
-    def _parse_sensor_data(self, data_right, data_left) -> StaticGesture.StaticGesture:
+    def _parse_sensor_data(self, data_left, data_right) -> StaticGesture.StaticGesture:
         """Parses the sensor data received from the serial port."""
 
         left_hand=StaticGesture.Hand(
@@ -130,23 +130,23 @@ class ApiController:
             )
         return self.__factory.create_static_gesture(left_hand, right_hand)
 
-    def _process_static_gesture(self, gesture_dto):
+    def _process_static_gesture(self, static_gesture):
         """Process a static gesture if recognized."""
 
-        static_gesture = self._gesture_service.recognise_gesture(gesture_dto)
+        static_gesture = self._gesture_service.recognise_gesture(static_gesture)
         if static_gesture:
             self._process_gesture(static_gesture)
         
 
-    def _process_dynamic_gesture(self, gesture_dto):
+    def _process_dynamic_gesture(self, static_gesture):
         """Process a dynamic gesture if recognized."""
         if len(self._potential_dynamic_gestures) == 5:
-            dynamic_gesture = self._gesture_service.recognise_gesture(self._gesture_mapper.gesture_dto_to_gesture(self._potential_dynamic_gestures))
+            dynamic_gesture = self._gesture_service.recognise_gesture(self._gesture_mapper.static_gesture_to_dynamic_gesture(self._potential_dynamic_gestures))
             if dynamic_gesture:
                 self._process_gesture(dynamic_gesture)
             self._potential_dynamic_gestures.clear()
         else:
-            self._potential_dynamic_gestures.append(gesture_dto)
+            self._potential_dynamic_gestures.append(static_gesture)
 
     def run(self):
         """Main loop to read and process serial data."""
@@ -154,24 +154,22 @@ class ApiController:
             self._read_serial_ports()
             while not self._stop_event.is_set():
                 try:
-                    if not self._serial_data_queue.empty():
-                        data_left, data_right = self._serial_data_queue.get()
-                        gesture_dto = self._parse_sensor_data(data_right, data_left)
-                        print(vars(gesture_dto.left_hand), vars(gesture_dto.right_hand))
+                    data_left, data_right = self._serial_data_queue.get(False)
+                    static_gesture = self._parse_sensor_data(data_left, data_right)
+                    print(vars(static_gesture.left_hand), vars(static_gesture.right_hand))
+                    
+                    if self._is_calibration_needed(static_gesture.left_hand.calibration, static_gesture.right_hand.calibration):
+                        print("Calibrating needed...")
+                        self._calibration.calibrate()
                         
-                        if self._is_calibration_needed(gesture_dto.left_hand.calibration, gesture_dto.right_hand.calibration):
-                            print("Calibrating needed...")
-                            self._calibration.calibrate()
-                            self._serial_data_queue.queue.clear()
-                            
-                        else:
-                            self._process_static_gesture(gesture_dto)
-                            self._process_dynamic_gesture(gesture_dto)
-                            
-                        with self._serial_data_queue.mutex: self._serial_data_queue.queue.clear()
-            
-                except Exception as e:
-                    self._serial_data_queue.get()  # Remove the invalid data
+                    else:
+                        self._process_static_gesture(static_gesture)
+                        self._process_dynamic_gesture(static_gesture)
+                        
+                    with self._serial_data_queue.mutex: self._serial_data_queue.queue.clear()
+        
+                except Queue.empty:
+                    pass
                     
         except Exception as e:
             self._serial_data_queue.get()  # Remove the invalid data 
