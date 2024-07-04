@@ -71,40 +71,44 @@ class GestureService:
         
         left_hand_features = self._extract_static_hand_features(gesture.left_hand)
         right_hand_features = self._extract_static_hand_features(gesture.right_hand)
-        points = np.array(left_hand_features + right_hand_features)
+        points = np.concatenate((left_hand_features, right_hand_features))
         
         _, index = gesture_tree.query(points, k=1)
                 
-        nearest_point = gesture_tree[index]
+        nearest_point = gesture_tree.data[index]
         nearest_name = gesture_names[index]
         
         lower_threshold = points * (1 - error_range)
         upper_threshold = points * (1 + error_range)
+        valid_lower = np.nan_to_num(lower_threshold, nan=-np.inf)
+        valid_upper = np.nan_to_num(upper_threshold, nan=np.inf)
         
-        if np.all(nearest_point >= lower_threshold) and np.all(nearest_point <= upper_threshold):
+        if np.all(nearest_point >= valid_lower) and np.all(nearest_point <= valid_upper):
             return nearest_name
         else:
             return None
                 
     def recognise_dynamic_gesture(self, gesture: DynamicGesture.DynamicGesture, error_range=30.0): 
-        
+        print('Recognizing dynamic gesture...')
         gesture_tree, gesture_names = self.gesture_repository.get_gestures()
         
         left_hand_features = self._extract_dynamic_hand_features(gesture.left_hand)
         right_hand_features = self._extract_dynamic_hand_features(gesture.right_hand)
-        points = np.array([left_hand_features, right_hand_features])
+        points = np.concatenate((left_hand_features, right_hand_features))
         
         _, index = gesture_tree.query(points, k=1)
         
-        nearest_point = gesture_tree[index]
+        nearest_point = gesture_tree.data[index]
         nearest_name = gesture_names[index]
         
         #eliminate from the general threshold the angular velocity and acceleration values, as well as the axis values
         general_indices = np.setdiff1d(np.arange(len(points)), [8,9,10,11,12,13, 22,23,24,25,26,27])
         lower_threshold = points[general_indices] * (1 - error_range)
         upper_threshold = points[general_indices] * (1 + error_range)
+        valid_lower = np.nan_to_num(lower_threshold, nan=-np.inf)
+        valid_upper = np.nan_to_num(upper_threshold, nan=np.inf)
         
-        within_bounds = np.all(nearest_point[general_indices] >= lower_threshold) and np.all(nearest_point[general_indices] <= upper_threshold)
+        within_bounds = np.all(nearest_point[general_indices] >= valid_lower) and np.all(nearest_point[general_indices] <= valid_upper)
 
         within_movement_bounds = (
             (((points[8] > nearest_point[8]) and (points[9] < nearest_point[9]) and (points[12] == nearest_point[12])) or

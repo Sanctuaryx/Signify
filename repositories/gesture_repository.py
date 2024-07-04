@@ -41,10 +41,9 @@ class GestureRepository:
         left_hand_features = np.array([self.__extract_hand_features(gesture.left_hand) for gesture in gestures])
         right_hand_features = np.array([self.__extract_hand_features(gesture.right_hand) for gesture in gestures])
         
-        points = np.hstack((left_hand_features, right_hand_features))
-        print(f'Fetched {points}from the database.')
-        tree = KDTree(points)
+        points = np.concatenate((left_hand_features, right_hand_features), axis=1)
         
+        tree = KDTree(points)
         names = np.array([gesture.name for gesture in gestures])
         
         print(f'Fetched {names} gestures from the database.')
