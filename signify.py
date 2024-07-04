@@ -59,7 +59,6 @@ import services.gesture_service
 import classes.StaticGesture as StaticGesture
 import services.gesture_mapper_service
 import classes.GestureFactory as GestureFactory
-import classes.BaseGesture as BaseGesture
 
 import time
 import threading
@@ -88,20 +87,35 @@ class ApiController:
 
         
     def _read_serial_ports(self):
-        """Function to read data from the serial ports."""
+        """Function to read data from the serial ports.
+
+        This function starts the serial data thread and handles any errors that occur during the process.
+
+        Raises:
+            AttributeError: If there is an error starting the BNO controller.
+
+        """
         try:
             self._serial_data_thread.start() 
         except AttributeError as e:
-            print(f"Error starting the bno controller: {e}")
+            print(f"Error starting the BNO controller: {e}")
             self._stop_event.set()
             
     def _is_calibration_needed(self, calibration_left, calibration_right):
-        """Check if calibration is needed based on the calibration data."""
+        """Check if calibration is needed based on the calibration data.
+
+        Args:
+            calibration_left (list): The calibration data for the left side.
+            calibration_right (list): The calibration data for the right side.
+
+        Returns:
+            bool: True if calibration is needed, False otherwise.
+        """
         return any(value < 2 for value in calibration_left) or any(value < 2 for value in calibration_right)
 
     def _process_gesture(self, gesture: str):
         """
-        Process the given gesture.
+        Process the given gesture, transforming it into an audio track and reproducing it.
 
         Args:
             gesture (BaseGesture.BaseGesture): The gesture to be processed.
@@ -210,10 +224,8 @@ class ApiController:
                         static_gesture = self._parse_sensor_data(data_left, data_right)
                         
                         if self._is_calibration_needed(static_gesture.left_hand.calibration, static_gesture.right_hand.calibration):
-                            #print("Calibration needed...")
-                            #self._calibration.calibrate()
-                            self._process_static_gesture(static_gesture)
-                            self._process_dynamic_gesture(static_gesture)
+                            print("Calibration needed...")
+                            self._calibration.calibrate()
                             
                         else:
                             self._process_static_gesture(static_gesture)

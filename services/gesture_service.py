@@ -28,16 +28,30 @@ sys.path.append(os.path.join(script_dir, '..'))
 import repositories.gesture_repository
 import classes.DynamicGesture as DynamicGesture
 import classes.StaticGesture as StaticGesture
-import classes.GestureFactory as GestureFactory
-import classes.AbstractGestureFactory as AbstractGestureFactory
 
 import numpy as np
 
 class GestureService:
+    """
+    Service class for recognizing static and dynamic gestures.
+
+    Attributes:
+        gesture_repository (GestureRepository): The repository for accessing predefined gestures.
+    """
+
     def __init__(self):
         self.gesture_repository = repositories.gesture_repository.GestureRepository()
         
     def _extract_static_hand_features(self, hand: StaticGesture.Hand):
+        """
+        Extracts the static hand features from a given hand.
+
+        Args:
+            hand (StaticGesture.Hand): The hand object containing the static hand features.
+
+        Returns:
+            np.array: The extracted static hand features.
+        """
         if hand is None:
             return [np.nan] * 14
         return np.array([
@@ -89,7 +103,17 @@ class GestureService:
             return None
                 
     def recognise_dynamic_gesture(self, gesture: DynamicGesture.DynamicGesture, error_range=30.0): 
-        print('Recognizing dynamic gesture...')
+        """
+        Recognizes a dynamic gesture by comparing it with the set of predefined gestures.
+
+        Args:
+            gesture (DynamicGesture.DynamicGesture): The dynamic gesture to be recognized.
+            error_range (float, optional): The error range allowed for matching the gesture. Defaults to 30.0.
+
+        Returns:
+            str or None: The name of the nearest matching gesture if it falls within the error range and movement bounds, 
+            otherwise returns None.
+        """
         gesture_tree, gesture_names = self.gesture_repository.get_gestures()
         
         left_hand_features = self._extract_dynamic_hand_features(gesture.left_hand)
