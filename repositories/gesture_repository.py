@@ -37,27 +37,29 @@ class GestureRepository:
         if gestures is None:
             print('Failed to fetch gestures from the database.')
             return None, None
-            
-        points = np.array([
-            [
-                hand.roll, hand.pitch, hand.yaw,
-                *hand.finger_flex, 
-                *(value for value in [hand.mean_acceleration, hand.std_acceleration, hand.mean_angular_velocity, hand.std_angular_velocity] if value is not None)
-            ]
-            for gesture in gestures
-            for hand in (gesture.left_hand, gesture.right_hand) if hand is not None
-        ])
         
+        left_hand_features = np.array([self.__extract_hand_features(gesture.left_hand) for gesture in gestures])
+        right_hand_features = np.array([self.__extract_hand_features(gesture.right_hand) for gesture in gestures])
+        
+        points = np.hstack((left_hand_features, right_hand_features))
+        print(f'Fetched {points}from the database.')
         tree = KDTree(points)
-        names = np.array([
-            gesture.name
-            for gesture in gestures])
         
+        names = np.array([gesture.name for gesture in gestures])
+        
+        print(f'Fetched {names} gestures from the database.')
         return tree, names
         
-    def _fetch_gesture(self) -> list[DynamicGesture.DynamicGesture]:
+    def __extract_hand_features(self, hand: DynamicGesture.Hand):
+        if hand is None:
+            return [np.nan] * 14
+        return [
+            hand.roll, hand.pitch, hand.yaw, *hand.finger_flex,
+            hand.mean_acceleration, hand.std_acceleration, hand.mean_angular_velocity, hand.std_acceleration, hand.accel_axis, hand.gyro_axis
+        ]
+        
+    def _fetch_gesture(self) -> list:
         try:
-            
             conn = sqlite3.connect(self._db_path)
             cursor = conn.cursor()
 

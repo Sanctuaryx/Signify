@@ -38,6 +38,8 @@ class GestureService:
         self.gesture_repository = repositories.gesture_repository.GestureRepository()
         
     def _extract_static_hand_features(self, hand: StaticGesture.Hand):
+        if hand is None:
+            return [np.nan] * 14
         return np.array([
             hand.roll, hand.pitch, hand.yaw,
             *hand.finger_flex, 
@@ -45,6 +47,8 @@ class GestureService:
         ])
             
     def _extract_dynamic_hand_features(self, hand: DynamicGesture.Hand):
+        if hand is None:
+            return [np.nan] * 14
         return np.array([
             hand.roll, hand.pitch, hand.yaw,
             *hand.finger_flex,
@@ -67,7 +71,7 @@ class GestureService:
         
         left_hand_features = self._extract_static_hand_features(gesture.left_hand)
         right_hand_features = self._extract_static_hand_features(gesture.right_hand)
-        points = np.array([left_hand_features, right_hand_features])
+        points = np.array(left_hand_features + right_hand_features)
         
         _, index = gesture_tree.query(points, k=1)
                 

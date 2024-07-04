@@ -76,12 +76,10 @@ class BNO055Calibrator:
         :param data_source: Sensor index (0 for left, 1 for right).
         :param sensor_name: Name of the sensor for display purposes.
         """
-        while not self._stop_event.is_set():
-            self._perform_calibration_routine(sensor_name)
-            calibration = self._get_calibration_data(data_source)
-            if all(value > 2 for value in calibration):
-                break
-            print("\nCalibration failed. Restarting calibration routine.")
+        
+        self._perform_calibration_routine(sensor_name)
+        self._get_calibration_data(data_source)
+        
 
     def calibrate(self):
         """

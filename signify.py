@@ -160,8 +160,10 @@ class ApiController:
                         static_gesture = self._parse_sensor_data(data_left, data_right)
                         
                         if self._is_calibration_needed(static_gesture.left_hand.calibration, static_gesture.right_hand.calibration):
-                            print("Calibration needed...")
-                            self._calibration.calibrate()
+                            #print("Calibration needed...")
+                            #self._calibration.calibrate()
+                            self._process_static_gesture(static_gesture)
+                            self._process_dynamic_gesture(static_gesture)
                             
                         else:
                             self._process_static_gesture(static_gesture)
