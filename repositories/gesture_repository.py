@@ -35,27 +35,27 @@ class GestureRepository:
         """
         gestures = self._fetch_gesture()
         if gestures is None:
+            print('Failed to fetch gestures from the database.')
             return None, None
             
         points = np.array([
             [
                 hand.roll, hand.pitch, hand.yaw,
-                *hand.finger_flex,  # Unpacking the finger flex values
+                *hand.finger_flex, 
                 *(value for value in [hand.mean_acceleration, hand.std_acceleration, hand.mean_angular_velocity, hand.std_angular_velocity] if value is not None)
             ]
             for gesture in gestures
             for hand in (gesture.left_hand, gesture.right_hand) if hand is not None
         ])
         
+        tree = KDTree(points)
         names = np.array([
             gesture.name
-            for gesture in gestures
-            for hand in (gesture.left_hand, gesture.right_hand) if hand is not None])
-        tree = KDTree(points)
+            for gesture in gestures])
         
         return tree, names
         
-    def _fetch_gesture(self):
+    def _fetch_gesture(self) -> list[DynamicGesture.DynamicGesture]:
         try:
             
             conn = sqlite3.connect(self._db_path)
@@ -65,36 +65,37 @@ class GestureRepository:
             gestures_data = cursor.fetchall()
             conn.close()
                         
-            return [self.__factory.create_dynamic_gesture(
-                id=row[0],
-                name=row[1],
-                left_hand=DynamicGesture.Hand(
-                    roll=row[3],
-                    pitch=row[4],
-                    yaw=row[5],
-                    finger_flex=list(map(int, row[6:11])),
-                    mean_acceleration=row[11],
-                    std_acceleration=row[12],
-                    mean_angular_velocity=row[13],
-                    std_angular_velocity=row[14],
-                    gyro_axis = int(row[15]),
-                    accel_axis = int(row[16])
-                    ),
-                right_hand=DynamicGesture.Hand(
-                    roll=row[17],
-                    pitch=row[18],
-                    yaw=row[19],
-                    finger_flex=list(map(int, row[20:25])),
-                    mean_acceleration=row[25],
-                    std_acceleration=row[26],
-                    mean_angular_velocity=row[27],
-                    std_angular_velocity=row[28],
-                    gyro_axis = int(row[29]),
-                    accel_axis = int(row[30])
-                    )
+            return [self.__factory.create_dynamic_stored_gesture(
+                row[0],
+                row[1],
+                DynamicGesture.Hand(
+                    roll=row[5],
+                    pitch=row[6],
+                    yaw=row[7],
+                    finger_flex=list(map(int, row[8:13])),
+                    mean_acceleration=row[13],
+                    std_acceleration=row[14],
+                    mean_angular_velocity=row[15],
+                    std_angular_velocity=row[16],
+                    gyro_axis = int(row[17]),
+                    accel_axis = int(row[18])
+                    ) if row[2] is not None else None,
+                DynamicGesture.Hand(
+                    roll=row[20],
+                    pitch=row[21],
+                    yaw=row[22],
+                    finger_flex=list(map(int, row[23:28])),
+                    mean_acceleration=row[28],
+                    std_acceleration=row[29],
+                    mean_angular_velocity=row[30],
+                    std_angular_velocity=row[31],
+                    gyro_axis = int(row[32]),
+                    accel_axis = int(row[33])
+                    ) if row[3] is not None else None
             ) for row in gestures_data]
             
         except Exception as e:
+            print(f'Failed to fetch gestures from the database: {e}')
             return None   
             
     def get_gestures(self):

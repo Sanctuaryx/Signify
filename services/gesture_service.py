@@ -52,7 +52,7 @@ class GestureService:
             hand.accel_axis, hand.gyro_axis
         ])
     
-    def recognise_static_gesture(self, gesture: StaticGesture.StaticGesture, error_range=0.1): 
+    def recognise_static_gesture(self, gesture: StaticGesture.StaticGesture, error_range=30.0): 
         """
         Recognizes a gesture by comparing it with a set of predefined gestures.
 
@@ -68,12 +68,9 @@ class GestureService:
         left_hand_features = self._extract_static_hand_features(gesture.left_hand)
         right_hand_features = self._extract_static_hand_features(gesture.right_hand)
         points = np.array([left_hand_features, right_hand_features])
-        print(points)
         
         _, index = gesture_tree.query(points, k=1)
-        
-        print(gesture_tree)
-        
+                
         nearest_point = gesture_tree[index]
         nearest_name = gesture_names[index]
         
@@ -85,7 +82,7 @@ class GestureService:
         else:
             return None
                 
-    def recognise_dynamic_gesture(self, gesture: DynamicGesture.DynamicGesture, error_range=0.1): 
+    def recognise_dynamic_gesture(self, gesture: DynamicGesture.DynamicGesture, error_range=30.0): 
         
         gesture_tree, gesture_names = self.gesture_repository.get_gestures()
         
@@ -95,7 +92,6 @@ class GestureService:
         
         _, index = gesture_tree.query(points, k=1)
         
-        print(gesture_tree)
         nearest_point = gesture_tree[index]
         nearest_name = gesture_names[index]
         

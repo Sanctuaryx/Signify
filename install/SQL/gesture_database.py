@@ -5,7 +5,7 @@ import os
 def insert_hand(cursor, roll, pitch, yaw, finger1, finger2, finger3, finger4, finger5, mean_acceleration, std_acceleration, mean_angular_velocity, std_angular_velocity, gyro_axis, accel_axis):
     cursor.execute('''
     INSERT INTO hands (roll, pitch, yaw, finger1, finger2, finger3, finger4, finger5, mean_acceleration, std_acceleration, mean_angular_velocity, std_angular_velocity, gyro_axis, accel_axis)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     ''', (roll, pitch, yaw, finger1, finger2, finger3, finger4, finger5, mean_acceleration, std_acceleration, mean_angular_velocity, std_angular_velocity, gyro_axis, accel_axis))
     return cursor.lastrowid
 
@@ -33,7 +33,7 @@ def create_tables(cursor):
         mean_angular_velocity REAL,
         std_angular_velocity REAL,
         gyro_axis INTEGER,
-        accel_axis INTEGER,
+        accel_axis INTEGER
     )
     ''')
     
@@ -51,9 +51,15 @@ def create_tables(cursor):
 def setup_data():
     return [
         {
-            "name": "gesture_1_STATIC",
-            "left_hand": (2.0, 2.0, 2.0, 2, 2, 2, 2, 2, 0.0, 0.0, 0.0, 0.0, 0, 0),
-            "right_hand": (2.0, 2.0, 2.0, 2, 2, 2, 2, 2, 0.0, 0.0, 0.0, 0.0, 0, 0)
+            "name": "a",
+            "left_hand": (85.0, -84.0, -153.0, 67, 25, 35, 38, 168, 0.0, 0.0, 0.0, 0.0, 0, 0),
+            "right_hand": None
+        },
+        
+        {
+            "name": "b",
+            "left_hand": (3.0, 3.0, 3.0, 3, 3, 3, 3, 3, 3.0, 3.0, 3.0, 3.0, 2, 2),
+            "right_hand": (3.0, 3.0, 3.0, 3, 3, 3, 3, 3, 0.0, 0.0, 0.0, 0.0, 0, 0)
         },
         
         {
@@ -65,7 +71,7 @@ def setup_data():
 
 def setup_database():
     # Specify the directory where you want to store the database file
-    database_dir = '../../resources/SQL/int_dataBase'
+    database_dir = 'resources/SQL/int_dataBase'
     database_file = 'gestures.db'
     database_path = os.path.join(database_dir, database_file)
     
@@ -81,10 +87,13 @@ def setup_database():
         left_hand_data = row["left_hand"]
         right_hand_data = row["right_hand"]
         
-        left_hand_id = insert_hand(cursor, *left_hand_data)
-        right_hand_id = insert_hand(cursor, *right_hand_data)
+        left_hand_id = insert_hand(cursor, *left_hand_data) if left_hand_data else None
+        right_hand_id = insert_hand(cursor, *right_hand_data) if right_hand_data else None
         
         insert_gesture(cursor, name, left_hand_id, right_hand_id)
+        
+    cursor.execute("SELECT * FROM gestures g LEFT JOIN hands lh ON g.left_hand_id = lh.id LEFT JOIN hands rh ON g.right_hand_id = rh.id")
+    print(cursor.fetchall())
     
     conn.commit()
     conn.close()
