@@ -141,7 +141,7 @@ class ApiController:
 
     def _process_dynamic_gesture(self, static_gesture):
         """Process a dynamic gesture if recognized."""
-        if len(self._potential_dynamic_gestures) == 5:
+        if len(self._potential_dynamic_gestures) == 2:
             dynamic_gesture = self._gesture_service.recognise_dynamic_gesture(self._gesture_mapper.static_gesture_to_dynamic_gesture(self._potential_dynamic_gestures))
             if dynamic_gesture:
                 self._process_gesture(dynamic_gesture)
