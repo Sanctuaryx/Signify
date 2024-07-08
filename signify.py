@@ -214,7 +214,15 @@ class ApiController:
             
 
     def run(self):
-        """Main loop to read and process serial data."""
+        """Main loop to read and process serial data.
+
+        This method is responsible for reading and processing serial data from the connected device.
+        It continuously checks for data in the serial data queue and performs the necessary operations
+        based on the received data. It also handles calibration and processing of static and dynamic gestures.
+
+        Raises:
+            KeyboardInterrupt: If the program is interrupted by the user.
+        """
         try:  
             self._read_serial_ports()
             while not self._stop_event.is_set():

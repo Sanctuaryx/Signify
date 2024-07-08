@@ -7,6 +7,22 @@ class MovementAxis(Enum):
     Z = 3
     
 class Hand:
+    """
+    Represents a dynamic gesture of a hand.
+
+    Attributes:
+        roll (float): The roll angle of the hand.
+        pitch (float): The pitch angle of the hand.
+        yaw (float): The yaw angle of the hand.
+        finger_flex (float): The flexion of the fingers.
+        gyro_axis (MovementAxis): The axis of gyroscope movement.
+        accel_axis (MovementAxis): The axis of accelerometer movement.
+        mean_acceleration (float): The mean acceleration of the hand.
+        std_acceleration (float): The standard deviation of acceleration of the hand.
+        mean_angular_velocity (float): The mean angular velocity of the hand.
+        std_angular_velocity (float): The standard deviation of angular velocity of the hand.
+    """
+
     def __init__(self, roll, pitch, yaw, finger_flex, gyro_axis: MovementAxis = None, accel_axis: MovementAxis = None, mean_acceleration = None, std_acceleration = None, mean_angular_velocity = None, std_angular_velocity = None):
         self._roll = roll
         self._pitch = pitch
@@ -84,24 +100,58 @@ class Hand:
         self._std_angular_velocity = std_angular_velocity
     
 class DynamicGesture(BaseGesture.BaseGesture):
-    def __init__(self, left_hand : Hand, right_hand : Hand, id = None, name = None):
+    """
+    Represents a dynamic gesture that involves both the left and right hand.
+
+    Args:
+        left_hand (Hand): The left hand involved in the gesture.
+        right_hand (Hand): The right hand involved in the gesture.
+        id (optional): The ID of the gesture. Defaults to None.
+        name (optional): The name of the gesture. Defaults to None.
+    """
+
+    def __init__(self, left_hand: Hand, right_hand: Hand, id=None, name=None):
         super().__init__(id, name)
         self._left_hand = left_hand
         self._right_hand = right_hand
-    
+
     @property
     def left_hand(self):
+        """
+        Get the left hand involved in the gesture.
+
+        Returns:
+            Hand: The left hand.
+        """
         return self._left_hand
-    
+
     @left_hand.setter
     def set_left_hand(self, left_hand):
+        """
+        Set the left hand involved in the gesture.
+
+        Args:
+            left_hand (Hand): The left hand.
+        """
         self._left_hand = left_hand
-    
+
     @property
     def right_hand(self):
+        """
+        Get the right hand involved in the gesture.
+
+        Returns:
+            Hand: The right hand.
+        """
         return self._right_hand
-    
+
     @right_hand.setter
     def set_right_hand(self, right_hand):
+        """
+        Set the right hand involved in the gesture.
+
+        Args:
+            right_hand (Hand): The right hand.
+        """
         self._right_hand = right_hand
     

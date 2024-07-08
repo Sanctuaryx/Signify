@@ -23,7 +23,7 @@ class GestureRepository:
         """
         self.__factory = GestureFactory.GestureFactory()
         self._db_path = db_path
-        self.__gesture_tree, self.__gesture_names = self._get_all_gestures()
+        self.__single_names, self.__single_tree, self.__both_names, self.__both_tree = self._get_all_gestures()
         print('DynamicGesture repository initialized successfully.')
 
     def _get_all_gestures(self):
@@ -38,26 +38,27 @@ class GestureRepository:
             print('Failed to fetch gestures from the database.')
             return None, None
         
-        left_hand_features = np.array([self.__extract_hand_features(gesture.left_hand) for gesture in gestures])
-        right_hand_features = np.array([self.__extract_hand_features(gesture.right_hand) for gesture in gestures])
+        gesture_features = np.array([self.__extract_hand_features(gesture.left_hand) + self.__extract_hand_features(gesture.right_hand) for gesture in gestures])
+        single_hand_points = np.array([points for points in gesture_features if len(points) == 14])
+        both_hands_points = np.array([points for points in gesture_features if len(points) == 28])
+                
+        single_tree = KDTree(single_hand_points)
+        single_names = np.array([gesture.name for gesture in gestures if gesture.left_hand is None or gesture.right_hand is None])
         
-        points = np.concatenate((left_hand_features, right_hand_features), axis=1)
+        both_tree = KDTree(both_hands_points)
+        both_names = np.array([gesture.name for gesture in gestures if gesture.left_hand is not None and gesture.right_hand is not None])
         
-        tree = KDTree(points)
-        names = np.array([gesture.name for gesture in gestures])
-        
-        print(f'Fetched {names} gestures from the database.')
-        return tree, names
+        return single_names, single_tree, both_names, both_tree
         
     def __extract_hand_features(self, hand: DynamicGesture.Hand):
         if hand is None:
-            return [np.nan] * 14
+            return []
         return [
-            hand.roll, hand.pitch, hand.yaw, *hand.finger_flex,
-            hand.mean_acceleration, hand.std_acceleration, hand.mean_angular_velocity, hand.std_acceleration, hand.accel_axis, hand.gyro_axis
+                hand.roll, hand.pitch, hand.yaw, *hand.finger_flex,
+                hand.mean_acceleration, hand.std_acceleration, hand.mean_angular_velocity, hand.std_acceleration, hand.accel_axis, hand.gyro_axis
         ]
         
-    def _fetch_gesture(self) -> list:
+    def _fetch_gesture(self):
         try:
             conn = sqlite3.connect(self._db_path)
             cursor = conn.cursor()
@@ -106,4 +107,4 @@ class GestureRepository:
         Returns:
             list: A list of tuples representing the static gestures data.
         """
-        return self.__gesture_tree, self.__gesture_names
+        return self.__single_names, self.__single_tree, self.__both_names, self.__both_tree

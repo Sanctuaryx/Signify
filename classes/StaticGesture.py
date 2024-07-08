@@ -1,6 +1,19 @@
 import classes.BaseGesture as BaseGesture
 
 class Hand:
+    """
+    Represents a static gesture of a hand.
+
+    Attributes:
+        roll (float): The roll angle of the hand.
+        pitch (float): The pitch angle of the hand.
+        yaw (float): The yaw angle of the hand.
+        finger_flex (float): The flexion of the fingers.
+        gyro (float): The gyroscope data.
+        accel (float): The accelerometer data.
+        calibration (float): The calibration data.
+    """
+
     def __init__(self, roll, pitch, yaw, gyro, accel, finger_flex, calibration):
         self._roll = roll
         self._pitch = pitch
@@ -67,24 +80,34 @@ class Hand:
         self._calibration = calibration
 
 class StaticGesture(BaseGesture.BaseGesture):
-    def __init__(self, left_hand : Hand, right_hand : Hand, id = None, name = None):
+    """
+    Represents a static gesture that can be performed with both hands.
+
+    Args:
+        left_hand (Hand): The left hand associated with the gesture.
+        right_hand (Hand): The right hand associated with the gesture.
+        id (optional): The ID of the gesture. Defaults to None.
+        name (optional): The name of the gesture. Defaults to None.
+    """
+
+    def __init__(self, left_hand: Hand, right_hand: Hand, id=None, name=None):
         super().__init__(id, name)
         self._left_hand = left_hand
         self._right_hand = right_hand
-    
+
     @property
     def left_hand(self):
         return self._left_hand
-    
+
     @left_hand.setter
     def left_hand(self, left_hand):
-        self._left_hand = left_hand
-    
+       self._left_hand = left_hand
+
     @property
     def right_hand(self):
         return self._right_hand
-    
-    @right_hand.setter  
+
+    @right_hand.setter
     def right_hand(self, right_hand):
         self._right_hand = right_hand
 

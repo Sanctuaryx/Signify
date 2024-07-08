@@ -1,5 +1,3 @@
-# /main/serial_port_reader.py
-
 import serial
 import time
 from queue import Queue
@@ -103,7 +101,26 @@ class SerialPortReader:
         return False
     
     def __low_pass_filter(self, string_left: str, string_right: str):
+        """
+        Applies a low-pass filter to the input strings and returns wether the filtered data is usable or not.
+
+        Args:
+            string_left (str): The left string to be filtered.
+            string_right (str): The right string to be filtered.
+
+        Returns:
+            bool: True if the filtering is successful, False otherwise.
+        """
         def validate_and_parse(string: str):
+            """
+            Validates and parses a string into a list of float arrays.
+
+            Args:
+                string (str): The string to be validated and parsed.
+
+            Returns:
+                list: A list of float arrays if the string is valid and can be parsed, None otherwise.
+            """
             segments = string.split('*')
             
             # Validate the number of segments

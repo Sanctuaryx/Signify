@@ -40,7 +40,8 @@ class GestureService:
     """
 
     def __init__(self):
-        self.gesture_repository = repositories.gesture_repository.GestureRepository()
+         
+        self.__single_names, self.__single_tree, self.__both_names, self.__both_tree  = repositories.gesture_repository.GestureRepository().get_gestures()
         
     def _extract_static_hand_features(self, hand: StaticGesture.Hand):
         """
@@ -81,26 +82,42 @@ class GestureService:
         Returns:
             str or None: The name of the recognized gesture, or None if no matching gesture is found within the error range.
         """
-        gesture_tree, gesture_names = self.gesture_repository.get_gestures()
         
         left_hand_features = self._extract_static_hand_features(gesture.left_hand)
         right_hand_features = self._extract_static_hand_features(gesture.right_hand)
         points = np.concatenate((left_hand_features, right_hand_features))
         
-        _, index = gesture_tree.query(points, k=1)
-                
-        nearest_point = gesture_tree.data[index]
-        nearest_name = gesture_names[index]
+        distance, index = self.__both_tree.query(points, k=1) 
+        nearest_name = self.__both_names[index]
+        print(points)
+        print(distance)
+        print(nearest_name)
         
-        lower_threshold = points * (1 - error_range)
-        upper_threshold = points * (1 + error_range)
-        valid_lower = np.nan_to_num(lower_threshold, nan=-np.inf)
-        valid_upper = np.nan_to_num(upper_threshold, nan=np.inf)
-        
-        if np.all(nearest_point >= valid_lower) and np.all(nearest_point <= valid_upper):
+        if distance <= error_range:
+            print(f'Nearest gesture: {nearest_name} with distance: {distance}.')
             return nearest_name
         else:
-            return None
+            distance, index = self.__single_tree.query(left_hand_features, k=1) 
+            nearest_name = self.__single_names[index]
+            print(points)
+            print(distance)
+            print(nearest_name)
+            
+            if distance <= error_range:
+                print(f'Nearest gesture: {nearest_name} with distance: {distance}.')
+                return nearest_name
+            else:
+                distance, index = self.__single_tree.query(right_hand_features, k=1) 
+                nearest_name = self.__single_names[index]
+                print(points)
+                print(distance)
+                print(nearest_name)
+                
+                if distance <= error_range:
+                    print(f'Nearest gesture: {nearest_name} with distance: {distance}.')
+                    return nearest_name
+                else:
+                    return None
                 
     def recognise_dynamic_gesture(self, gesture: DynamicGesture.DynamicGesture, error_range=30.0): 
         """
@@ -114,8 +131,7 @@ class GestureService:
             str or None: The name of the nearest matching gesture if it falls within the error range and movement bounds, 
             otherwise returns None.
         """
-        gesture_tree, gesture_names = self.gesture_repository.get_gestures()
-        
+                
         left_hand_features = self._extract_dynamic_hand_features(gesture.left_hand)
         right_hand_features = self._extract_dynamic_hand_features(gesture.right_hand)
         points = np.concatenate((left_hand_features, right_hand_features))
@@ -125,15 +141,6 @@ class GestureService:
         nearest_point = gesture_tree.data[index]
         nearest_name = gesture_names[index]
         
-        #eliminate from the general threshold the angular velocity and acceleration values, as well as the axis values
-        general_indices = np.setdiff1d(np.arange(len(points)), [8,9,10,11,12,13, 22,23,24,25,26,27])
-        lower_threshold = points[general_indices] * (1 - error_range)
-        upper_threshold = points[general_indices] * (1 + error_range)
-        valid_lower = np.nan_to_num(lower_threshold, nan=-np.inf)
-        valid_upper = np.nan_to_num(upper_threshold, nan=np.inf)
-        
-        within_bounds = np.all(nearest_point[general_indices] >= valid_lower) and np.all(nearest_point[general_indices] <= valid_upper)
-
         within_movement_bounds = (
             (((points[8] > nearest_point[8]) and (points[9] < nearest_point[9]) and (points[12] == nearest_point[12])) or
             (points[10] > nearest_point[10]) and (points[11] < nearest_point[11]) and (points[13] == nearest_point[13])) 
@@ -141,10 +148,9 @@ class GestureService:
             ((((points[22] > nearest_point[22]) and (points[23] < nearest_point[23]) and (points[26] == nearest_point[26])) or
             (points[24] > nearest_point[24]) and (points[25] < nearest_point[25]) and (points[27] == nearest_point[27]))
             if len(nearest_point) > 27 else False)
-             
         )
         
-        if within_bounds and within_movement_bounds:
+        if within_movement_bounds:
             return nearest_name
         else:
             return None
