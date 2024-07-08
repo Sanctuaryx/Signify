@@ -71,7 +71,7 @@ class GestureService:
             hand.accel_axis, hand.gyro_axis
         ])
     
-    def recognise_static_gesture(self, gesture: StaticGesture.StaticGesture, error_range=30.0): 
+    def recognise_static_gesture(self, gesture: StaticGesture.StaticGesture, error_range=300.0): 
         """
         Recognizes a gesture by comparing it with a set of predefined gestures.
 
@@ -86,38 +86,22 @@ class GestureService:
         left_hand_features = self._extract_static_hand_features(gesture.left_hand)
         right_hand_features = self._extract_static_hand_features(gesture.right_hand)
         points = np.concatenate((left_hand_features, right_hand_features))
-        
-        distance, index = self.__both_tree.query(points, k=1) 
-        nearest_name = self.__both_names[index]
         print(points)
-        print(distance)
-        print(nearest_name)
-        
-        if distance <= error_range:
+        queries = [
+            (self.__both_tree, points, self.__both_names),
+            (self.__single_tree, left_hand_features, self.__single_names),
+            (self.__single_tree, right_hand_features, self.__single_names)
+        ]
+
+        for tree, features, names in queries:
+            distance, index = tree.query(features, k=1)
+            nearest_name = names[index]
             print(f'Nearest gesture: {nearest_name} with distance: {distance}.')
-            return nearest_name
-        else:
-            distance, index = self.__single_tree.query(left_hand_features, k=1) 
-            nearest_name = self.__single_names[index]
-            print(points)
-            print(distance)
-            print(nearest_name)
-            
+
             if distance <= error_range:
-                print(f'Nearest gesture: {nearest_name} with distance: {distance}.')
                 return nearest_name
-            else:
-                distance, index = self.__single_tree.query(right_hand_features, k=1) 
-                nearest_name = self.__single_names[index]
-                print(points)
-                print(distance)
-                print(nearest_name)
-                
-                if distance <= error_range:
-                    print(f'Nearest gesture: {nearest_name} with distance: {distance}.')
-                    return nearest_name
-                else:
-                    return None
+        
+        return None
                 
     def recognise_dynamic_gesture(self, gesture: DynamicGesture.DynamicGesture, error_range=30.0): 
         """
@@ -136,21 +120,28 @@ class GestureService:
         right_hand_features = self._extract_dynamic_hand_features(gesture.right_hand)
         points = np.concatenate((left_hand_features, right_hand_features))
         
-        _, index = gesture_tree.query(points, k=1)
+        queries = [
+            (self.__both_tree, points, self.__both_names),
+            (self.__single_tree, left_hand_features, self.__single_names),
+            (self.__single_tree, right_hand_features, self.__single_names)
+        ]
         
-        nearest_point = gesture_tree.data[index]
-        nearest_name = gesture_names[index]
+        for tree, features, names in queries:
+            distance, index = tree.query(features, k=1)
+            nearest_name = names[index]
+            nearest_point = tree.data[index]
+            
+            within_movement_bounds = (
+                (((points[8] > nearest_point[8]) and (points[9] < nearest_point[9]) and (points[12] == nearest_point[12])) or
+                (points[10] > nearest_point[10]) and (points[11] < nearest_point[11]) and (points[13] == nearest_point[13])) 
+                or
+                ((((points[22] > nearest_point[22]) and (points[23] < nearest_point[23]) and (points[26] == nearest_point[26])) or
+                (points[24] > nearest_point[24]) and (points[25] < nearest_point[25]) and (points[27] == nearest_point[27]))
+                if len(nearest_point) > 27 else False)
+            )
+            
+            if distance <= error_range or within_movement_bounds:
+                print(f'Nearest gesture: {nearest_name} with distance: {distance}.')
+                return nearest_name
         
-        within_movement_bounds = (
-            (((points[8] > nearest_point[8]) and (points[9] < nearest_point[9]) and (points[12] == nearest_point[12])) or
-            (points[10] > nearest_point[10]) and (points[11] < nearest_point[11]) and (points[13] == nearest_point[13])) 
-            or
-            ((((points[22] > nearest_point[22]) and (points[23] < nearest_point[23]) and (points[26] == nearest_point[26])) or
-            (points[24] > nearest_point[24]) and (points[25] < nearest_point[25]) and (points[27] == nearest_point[27]))
-            if len(nearest_point) > 27 else False)
-        )
-        
-        if within_movement_bounds:
-            return nearest_name
-        else:
-            return None
+        return None
