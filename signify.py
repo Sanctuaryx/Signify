@@ -123,10 +123,11 @@ class ApiController:
         Returns:
             None
         """
-        self._tts.convert_text_to_audio_with_engine(gesture)
-        self._last_gesture = gesture
-        self._last_gesture_time = time.time()
-        self._file_controller.play_speech_file()
+        if gesture != self._last_gesture:
+            self._tts.convert_text_to_audio_with_engine(gesture)
+            self._last_gesture = gesture
+            self._last_gesture_time = time.time()
+            self._file_controller.play_speech_file()
 
     def _parse_sensor_data(self, data_left, data_right) -> StaticGesture.StaticGesture:
         """
@@ -172,7 +173,7 @@ class ApiController:
         """
         static_gesture = self._gesture_service.recognise_static_gesture(static_gesture)
         if static_gesture:
-            self._process_gesture(static_gesture.name)
+            self._process_gesture(static_gesture)
         
     def __check_hand(self, hand: StaticGesture.Hand):
         if hand is None:

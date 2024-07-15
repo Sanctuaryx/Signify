@@ -71,7 +71,7 @@ class GestureService:
             hand.accel_axis, hand.gyro_axis
         ])
     
-    def recognise_static_gesture(self, gesture: StaticGesture.StaticGesture, error_range=300.0): 
+    def recognise_static_gesture(self, gesture: StaticGesture.StaticGesture, error_range=150.0): 
         """
         Recognizes a gesture by comparing it with a set of predefined gestures.
 
@@ -86,20 +86,15 @@ class GestureService:
         left_hand_features = self._extract_static_hand_features(gesture.left_hand)
         right_hand_features = self._extract_static_hand_features(gesture.right_hand)
         points = np.concatenate((left_hand_features, right_hand_features))
-        print(points)
         queries = [
-            (self.__both_tree, points, self.__both_names),
-            (self.__single_tree, left_hand_features, self.__single_names),
-            (self.__single_tree, right_hand_features, self.__single_names)
+            (self.__both_tree, points, self.__both_names, error_range+800.0),
+            (self.__single_tree, right_hand_features, self.__single_names, error_range)
         ]
 
-        for tree, features, names in queries:
+        for tree, features, names, error in queries:
             distance, index = tree.query(features, k=1)
-            nearest_name = names[index]
-            print(f'Nearest gesture: {nearest_name} with distance: {distance}.')
-
-            if distance <= error_range:
-                return nearest_name
+            if distance <= error:
+                return names[index]
         
         return None
                 
@@ -122,7 +117,6 @@ class GestureService:
         
         queries = [
             (self.__both_tree, points, self.__both_names),
-            (self.__single_tree, left_hand_features, self.__single_names),
             (self.__single_tree, right_hand_features, self.__single_names)
         ]
         

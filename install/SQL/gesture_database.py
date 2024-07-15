@@ -51,21 +51,46 @@ def create_tables(cursor):
 def setup_data():
     return [
         {
-            "name": "a",
+            "name": "A",
             "left_hand": None,
-            "right_hand": (85.0, -84.0, -153.0, 67, 25, 35, 38, 168, 0.0, 0.0, 0.0, 0.0, 0, 0)
+            "right_hand": (82.0, -78.5, 97.5, 54, 16, 28, 106, 160, 0.0, 0.0, 0.0, 0.0, 0, 0)
         },
         
         {
-            "name": "b",
-            "left_hand": (3.0, 3.0, 3.0, 3, 3, 3, 3, 3, 3.0, 3.0, 3.0, 3.0, 2, 2),
-            "right_hand": (3.0, 3.0, 3.0, 3, 3, 3, 3, 3, 0.0, 0.0, 0.0, 0.0, 0, 0)
+            "name": "R",
+            "left_hand": None,
+            "right_hand": (96.0, -73.5, 120.0, 800, 700, 16, 52, 210, 0.0, 0.0, 0.0, 0.0, 0, 0)
         },
         
         {
-            "name": "gesture_100_DYNAMIC",
-            "left_hand": (3.0, 3.0, 3.0, 3, 3, 3, 3, 3, 3.0, 3.0, 3.0, 3.0, 2, 2),
-            "right_hand": (3.0, 3.0, 3.0, 3, 3, 3, 3, 3, 0.0, 0.0, 0.0, 0.0, 0, 0)
+            "name": "U",
+            "left_hand": None,
+            "right_hand": (154.0, -42, 104, 887, 890, 16, 95, 210, 0.0, 0.0, 0.0, 0.0, 0, 0)
+        },
+        
+        {
+            "name": "L",
+            "left_hand": None,
+            "right_hand": (98.12, -72.87, 131.94, 119, 18, 19, 40, 158, 0.0, 0.0, 0.0, 0.0, 0, 0)
+        },
+        
+        {
+            "name": "BUENOS",
+            "left_hand": None,
+            "right_hand": (344.44, -10.88, 70.25, 891, 893, 890, 893, 159, 0.0, 0.0, 0.0, 0.0, 0, 0)
+        },
+        
+        
+        {
+            "name": "SOY",
+            "left_hand": None,
+            "right_hand": (333.69,-23.25,97.31, 469,13,13,64,214, 0.0, 0.0, 0.0, 0.0, 0, 0)
+        },
+        
+        {
+            "name": "DIAS",
+            "left_hand": (179.56,-12.06,0.94, 40,887,26,52,196, 0.0, 0.0, 0.0, 0.0, 0, 0),
+            "right_hand": (31.44,-7.06,18.62, 887,19,14,92,206, 0.0, 0.0, 0.0, 0.0, 0, 0)
         }
     ]
 
@@ -91,9 +116,9 @@ def setup_database():
         right_hand_id = insert_hand(cursor, *right_hand_data) if right_hand_data else None
         
         insert_gesture(cursor, name, left_hand_id, right_hand_id)
+        print(f"Inserted data for gesture {name} successfully.")
         
     cursor.execute("SELECT * FROM gestures g LEFT JOIN hands lh ON g.left_hand_id = lh.id LEFT JOIN hands rh ON g.right_hand_id = rh.id")
-    print(cursor.fetchall())
     
     conn.commit()
     conn.close()
